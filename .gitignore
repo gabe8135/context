@@ -1,9 +1,84 @@
-node_modules
-.next
-.env
-.env.local
-coverage
-*.log
+# Dependencies
+node_modules/
 
-.vercel
-.env*
+# PNPM local store
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# Builds
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Operating system
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Caches
+.cache/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# Tests and browser reports
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Temporary files and uploads
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Supabase local development
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# Vercel local project metadata
+.vercel/
+
+# Local Codex/agent workspace metadata
+.agents/
+.codex/
+
+# Certificates and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Archives generated locally
+*.tar
+*.tar.gz
+*.tgz
