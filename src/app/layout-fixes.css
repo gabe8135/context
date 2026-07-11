@@ -1,0 +1,56 @@
+/* Correções estruturais compartilhadas por todas as telas do aplicativo. */
+.shell{grid-template-columns:250px minmax(0,1fr)}
+.sidebar{height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#39655d transparent}
+.main{min-height:100dvh;min-width:0}
+.content,.panel,.item-main{min-width:0}
+.item-title,.meta,.subtitle,.field strong,.field p{overflow-wrap:anywhere}
+.project-head,.top-actions,.actions,.form-actions{flex-wrap:wrap}
+.data-panel{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-panel table{min-width:680px}
+
+@media(max-width:900px){
+  .shell{display:block}
+  .sidebar{display:none}
+  .main{min-height:100dvh}
+  .topbar{gap:12px}
+  .search{flex:1;width:auto;max-width:420px}
+  .content{max-width:100%;overflow-x:hidden}
+  .project-head{width:100%}
+  .project-head>.actions{width:100%}
+  .metrics{width:100%}
+}
+
+@media(max-width:620px){
+  .topbar{height:60px;padding:0 12px}
+  .top-actions>.btn{display:none}
+  .search{min-width:0;padding:8px 10px}
+  .search input{min-width:0;font-size:14px}
+  .content{padding:20px 14px 88px}
+  .page-title{font-size:26px}
+  .metrics{grid-template-columns:1fr 1fr;margin:22px 0}
+  .metric{padding:15px 14px}
+  .metric-value{font-size:21px}
+  .form-panel{padding:17px;margin-top:20px}
+  .form-actions{justify-content:stretch}
+  .form-actions>.btn,.form-actions>form,.form-actions>form>.btn{width:100%}
+  .project-head>.btn{width:100%;text-align:center}
+  .panel>.item{align-items:stretch;flex-direction:column}
+  .panel>.item>.actions{width:100%}
+  .panel>.item>.actions .btn{flex:1;text-align:center}
+}
+
+@media(max-width:480px){
+  .metrics{grid-template-columns:1fr}
+  .metric-value{font-size:23px;overflow-wrap:anywhere}
+  .actions>.btn,.actions>form{max-width:100%}
+  .actions>form>.btn{width:100%}
+  .field input,.field select,.field textarea{min-width:0}
+}
+
+.manual-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:28px;align-items:start}
+.manual-list{padding:4px 20px 14px}
+.manual-item{padding:13px 0;border-bottom:1px solid var(--line)}
+.manual-item:last-child{border-bottom:0}
+.manual-item strong{font-size:14px}
+.manual-item p{margin:5px 0 0;color:var(--muted);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:900px){.manual-grid{grid-template-columns:1fr}}

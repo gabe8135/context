@@ -1,0 +1,1 @@
+export default function Loading(){return <div className="content"><div className="panel" style={{padding:24}}><div className="eyebrow">Carregando</div><p className="subtitle">Recuperando seu contexto com segurança…</p></div></div>}

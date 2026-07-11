@@ -1,0 +1,3 @@
+import test from"node:test";import assert from"node:assert/strict";import{calculateFinancialSummary,domainNeedsAlert}from"../src/lib/business.js";
+test("calcula recebido, pendente, vencido e despesas",()=>{assert.deepEqual(calculateFinancialSummary([{entry_type:"income",status:"paid",amount_cents:50000},{entry_type:"income",status:"overdue",amount_cents:20000},{entry_type:"expense",status:"paid",amount_cents:8000}],112000),{received_cents:50000,pending_cents:62000,overdue_cents:20000,expense_cents:8000,percent_received:45})});
+test("gera atenção apenas dentro da janela de vencimento",()=>{const now=new Date("2026-07-10T12:00:00Z");assert.equal(domainNeedsAlert("2026-07-31",now,30),true);assert.equal(domainNeedsAlert("2026-09-01",now,30),false)});
