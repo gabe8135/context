@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Contexto">
-  <rect width="512" height="512" rx="112" fill="#102b27"/>
-  <rect x="36" y="36" width="440" height="440" rx="88" fill="none" stroke="#69d7c5" stroke-width="18"/>
-  <g fill="none" stroke="#c7f36b" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="512" height="512" rx="112" fill="#0c1320"/>
+  <rect x="36" y="36" width="440" height="440" rx="88" fill="none" stroke="#8b7cf6" stroke-width="18"/>
+  <g fill="none" stroke="#5eead4" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
     <path d="M244 130c-50-22-94 12-86 62-40 12-50 66-16 90-22 42 12 88 58 80 8 34 50 46 76 22V154c-8-14-18-20-32-24Z"/>
     <path d="M268 130c50-22 94 12 86 62 40 12 50 66 16 90 22 42-12 88-58 80-8 34-50 46-76 22V154c8-14 18-20 32-24Z"/>
     <path d="M158 192h54l28 34M354 192h-54l-28 34M142 282h66l32-28M370 282h-66l-32-28M200 362v-42l40-32M312 362v-42l-40-32"/>
   </g>
-  <g fill="#69d7c5"><circle cx="158" cy="192" r="18"/><circle cx="354" cy="192" r="18"/><circle cx="142" cy="282" r="18"/><circle cx="370" cy="282" r="18"/><circle cx="200" cy="362" r="18"/><circle cx="312" cy="362" r="18"/></g>
+  <g fill="#8b7cf6"><circle cx="158" cy="192" r="18"/><circle cx="354" cy="192" r="18"/><circle cx="142" cy="282" r="18"/><circle cx="370" cy="282" r="18"/><circle cx="200" cy="362" r="18"/><circle cx="312" cy="362" r="18"/></g>
 </svg>

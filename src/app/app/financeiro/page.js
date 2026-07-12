@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { requireWorkspace } from "@/lib/auth-context";
+import { getActiveContextIds } from "@/lib/active-context";
 import { cancelFinancialEntryAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,10 @@ const money = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", cur
 export default async function Finance({ searchParams }) {
   const queryParams = await searchParams;
   const { supabase, workspaceId } = await requireWorkspace();
+  const { projectIds } = await getActiveContextIds(supabase, workspaceId);
+  if (!projectIds.length) return <EmptyFinance queryParams={queryParams}/>;
   let query = supabase.from("financial_entries").select("id,description,entry_type,status,amount_cents,occurred_at,due_at,projects(name,slug),clients(name)").eq("workspace_id", workspaceId).is("archived_at", null).order("created_at", { ascending: false });
+  query = query.in("project_id", projectIds);
   if (queryParams.tipo) query = query.eq("entry_type", queryParams.tipo);
   if (queryParams.status) query = query.eq("status", queryParams.status);
   const { data, error } = await query;
@@ -31,4 +35,8 @@ export default async function Finance({ searchParams }) {
 
 function Metric({ label, value }) {
   return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value mono">{value}</div></div>;
+}
+
+function EmptyFinance({ queryParams }) {
+  return <AppShell><div className="content"><div className="project-head"><div><div className="eyebrow">Controle financeiro</div><h1 className="page-title">Financeiro</h1></div><Link className="btn primary" href="/app/financeiro/novo"><Plus size={15}/> Novo lançamento</Link></div>{queryParams.sucesso && <p className="success-note">{queryParams.sucesso}</p>}<section className="metrics"><Metric label="Recebido" value={money(0)}/><Metric label="Custos pagos" value={money(0)}/><Metric label="Descontos" value={money(0)}/><Metric label="Resultado" value={money(0)}/></section><section className="panel"><div className="empty">Nenhum lançamento de projeto ativo. Consulte Arquivados para restaurar projetos.</div></section></div></AppShell>;
 }

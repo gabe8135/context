@@ -1,1 +1,10 @@
-{"name":"Contexto","short_name":"Contexto","description":"Memória operacional para profissionais","start_url":"/app/projetos","display":"standalone","background_color":"#f4f5f0","theme_color":"#102b27","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+{
+  "name": "Contexto",
+  "short_name": "Contexto",
+  "description": "Memória operacional para profissionais",
+  "start_url": "/app/projetos",
+  "display": "standalone",
+  "background_color": "#090e16",
+  "theme_color": "#0c1320",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

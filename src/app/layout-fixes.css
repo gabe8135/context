@@ -1,6 +1,6 @@
 /* Correções estruturais compartilhadas por todas as telas do aplicativo. */
 .shell{grid-template-columns:250px minmax(0,1fr)}
-.sidebar{height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#39655d transparent}
+.sidebar{height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .main{min-height:100dvh;min-width:0}
 .content,.panel,.item-main{min-width:0}
 .item-title,.meta,.subtitle,.field strong,.field p{overflow-wrap:anywhere}

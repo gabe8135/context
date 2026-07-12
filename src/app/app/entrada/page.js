@@ -2,19 +2,22 @@ import Link from "next/link";
 import { CalendarDays, CheckSquare, AlertTriangle, Landmark } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { requireWorkspace } from "@/lib/auth-context";
+import { getActiveContextIds } from "@/lib/active-context";
 
 export const dynamic = "force-dynamic";
 const date = value => value ? new Date(value).toLocaleString("pt-BR", {dateStyle:"short",timeStyle:"short"}) : "Sem data";
 
 export default async function InboxPage() {
   const { supabase, workspaceId } = await requireWorkspace();
+  const { projectIds } = await getActiveContextIds(supabase, workspaceId);
   const now = new Date();
   const horizon = new Date(now.getTime() + 14 * 86400000).toISOString();
-  const [tasksResult, meetingsResult, financeResult] = await Promise.all([
-    supabase.from("tasks").select("id,title,status,priority,due_at,projects(name,slug)").eq("workspace_id",workspaceId).not("status","in","(completed,cancelled,archived)").order("due_at",{ascending:true,nullsFirst:false}).limit(30),
-    supabase.from("meetings").select("id,title,scheduled_at,participants,projects(name,slug)").eq("workspace_id",workspaceId).is("archived_at",null).gte("scheduled_at",now.toISOString()).lte("scheduled_at",horizon).order("scheduled_at").limit(20),
-    supabase.from("financial_entries").select("id,description,status,amount_cents,due_at,projects(name,slug)").eq("workspace_id",workspaceId).eq("entry_type","income").not("status","in","(paid,cancelled)").order("due_at",{ascending:true,nullsFirst:false}).limit(20),
-  ]);
+  const empty = Promise.resolve({data:[],error:null});
+  const [tasksResult, meetingsResult, financeResult] = await Promise.all(projectIds.length ? [
+    supabase.from("tasks").select("id,title,status,priority,due_at,projects(name,slug)").eq("workspace_id",workspaceId).in("project_id",projectIds).not("status","in","(completed,cancelled,archived)").order("due_at",{ascending:true,nullsFirst:false}).limit(30),
+    supabase.from("meetings").select("id,title,scheduled_at,participants,projects(name,slug)").eq("workspace_id",workspaceId).in("project_id",projectIds).is("archived_at",null).gte("scheduled_at",now.toISOString()).lte("scheduled_at",horizon).order("scheduled_at").limit(20),
+    supabase.from("financial_entries").select("id,description,status,amount_cents,due_at,projects(name,slug)").eq("workspace_id",workspaceId).in("project_id",projectIds).eq("entry_type","income").not("status","in","(paid,cancelled)").order("due_at",{ascending:true,nullsFirst:false}).limit(20),
+  ] : [empty,empty,empty]);
   const failed = [tasksResult,meetingsResult,financeResult].find(result => result.error);
   if (failed) throw failed.error;
   const tasks = tasksResult.data || [], meetings = meetingsResult.data || [], finance = financeResult.data || [];
