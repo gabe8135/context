@@ -2,6 +2,7 @@ import "./globals.css";
 import "./crud.css";
 import "./project-nav.css";
 import "./layout-fixes.css";
+import "./theme-polish.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectionStatus } from "@/components/connection-status";
 
