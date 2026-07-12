@@ -1,6 +1,7 @@
 import { demoProject } from "@/data/demo-project";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { calculateFinancialSummary } from "@/lib/business";
 
 const problem = new Set(["attention", "error", "pending"]);
 
@@ -31,11 +32,8 @@ export async function getProjectDashboard(slug) {
   if (failed) throw failed.error;
   const [storedAlerts, tasks, entries, domains, hosting, integrations, dns, ssl, email, decision, activity] = results.map(result => result.data || (result.data === null ? null : []));
   const rows = entries || [];
-  const sum = fn => rows.filter(fn).reduce((total, item) => total + item.amount_cents, 0);
-  const received = sum(x => x.entry_type === "income" && x.status === "paid");
-  const discounts = sum(x => x.entry_type === "discount" && x.status !== "cancelled");
-  const expenses = sum(x => ["expense", "tax", "service_cost"].includes(x.entry_type) && x.status === "paid");
-  const overdue = sum(x => x.entry_type === "income" && (x.status === "overdue" || isPast(x.due_at) && x.status !== "paid"));
+  const financial = calculateFinancialSummary(rows, project.agreed_value_cents);
+  financial.overdue_cents = rows.filter(x => x.status !== "cancelled" && x.entry_type === "income" && (x.status === "overdue" || isPast(x.due_at) && x.status !== "paid")).reduce((total, item) => total + item.amount_cents, 0);
   const automaticAlerts = buildAlerts({ tasks, entries: rows, domains, hosting, integrations, dns, ssl, email });
   const timestamp = project.last_activity_at || new Date().toISOString();
 
@@ -44,7 +42,7 @@ export async function getProjectDashboard(slug) {
     client_name: project.clients?.name,
     alerts: [...(storedAlerts || []), ...automaticAlerts].slice(0, 8),
     tasks: tasks || [],
-    financial: { received_cents: received, pending_cents: Math.max(project.agreed_value_cents - received - discounts, 0), overdue_cents: overdue, expense_cents: expenses, discount_cents: discounts },
+    financial,
     infrastructure: [
       ...(domains || []).map(x => ({ name: "Domínio", detail: x.domain, status: x.status })),
       ...(hosting || []).map(x => ({ name: "Hospedagem", detail: x.provider, status: x.status })),

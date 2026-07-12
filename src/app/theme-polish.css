@@ -107,6 +107,8 @@ a{color:var(--link)}
 .mobile-nav{background:color-mix(in srgb,var(--surface) 96%,transparent);border-color:var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.1)}
 .mobile-nav a{color:var(--muted)}
 .mobile-nav a:hover,.mobile-nav a:focus-visible{color:var(--brand)}
+.table-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.table-actions form{margin:0}
 
 [data-theme="dark"] .panel,[data-theme="dark"] .metric,[data-theme="dark"] .login-card{box-shadow:inset 0 1px 0 rgba(255,255,255,.025),var(--shadow)}
 [data-theme="dark"] .btn.primary{box-shadow:0 2px 7px rgba(0,0,0,.28)}
