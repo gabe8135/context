@@ -4,6 +4,8 @@ import { AppShell } from "@/components/app-shell";
 import { requireWorkspace } from "@/lib/auth-context";
 import { restoreClientAction } from "@/app/app/clientes/actions";
 import { restoreProjectAction } from "@/app/app/projetos/actions";
+import { restoreTaskAction } from "@/app/app/tarefas/actions";
+import { restoreNoteAction } from "@/app/app/notas/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +26,8 @@ export default async function Archived({ searchParams }) {
   return <AppShell><div className="content"><div className="eyebrow">Memória preservada</div><h1 className="page-title">Arquivados</h1><p className="subtitle">Itens arquivados não entram na operação nem nos totais financeiros. Restaure quando precisar.</p>{query.sucesso && <p className="success-note">{query.sucesso}</p>}{query.erro && <p className="error">{query.erro}</p>}<div className="archive-grid">
     <ArchiveSection title="Clientes" items={clients} render={(item) => <><div className="item-main"><div className="item-title">{item.name}</div><ArchiveDate value={item.archived_at}/></div><form action={restoreClientAction.bind(null, item.id)}><button className="btn"><RotateCcw size={14}/> Desarquivar</button></form></>}/>
     <ArchiveSection title="Projetos" items={projects} render={(item) => <><div className="item-main"><div className="item-title">{item.name}</div><div className="meta">Cliente: {item.clients?.name || "—"}{item.clients?.archived_at ? " · desarquive o cliente primeiro" : ""}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/projetos/${item.slug}`}>Consultar</Link><form action={restoreProjectAction.bind(null, item.id)}><button className="btn" disabled={Boolean(item.clients?.archived_at)}><RotateCcw size={14}/> Desarquivar</button></form></div></>}/>
-    <ArchiveSection title="Tarefas" items={tasks} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><Link className="btn" href={`/app/tarefas/${item.id}`}>Consultar</Link></>}/>
-    <ArchiveSection title="Notas" items={notes} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><Link className="btn" href={`/app/notas/${item.id}`}>Consultar</Link></>}/>
+    <ArchiveSection title="Tarefas" items={tasks} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/tarefas/${item.id}`}>Consultar</Link><form action={restoreTaskAction.bind(null,item.id)}><button className="btn"><RotateCcw size={14}/> Desarquivar</button></form></div></>}/>
+    <ArchiveSection title="Notas" items={notes} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/notas/${item.id}`}>Consultar</Link><form action={restoreNoteAction.bind(null,item.id)}><button className="btn"><RotateCcw size={14}/> Desarquivar</button></form></div></>}/>
     <ArchiveSection title="Reuniões" items={meetings} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><Link className="btn" href={`/app/reunioes/${item.id}`}>Consultar</Link></>}/>
   </div></div></AppShell>;
 }

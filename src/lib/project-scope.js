@@ -1,0 +1,1 @@
+export async function resolveProjectScope(supabase,workspaceId,slug){if(!slug)return null;const{data,error}=await supabase.from('projects').select('id,name,slug,client_id,clients(name)').eq('workspace_id',workspaceId).eq('slug',slug).is('archived_at',null).maybeSingle();if(error)throw error;return data||null}

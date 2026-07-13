@@ -54,3 +54,16 @@ export async function cancelFinancialEntryAction(id) {
   revalidatePath("/app/financeiro");
   revalidatePath(`/app/projetos/${entry.projects?.slug}`);
 }
+
+export async function deleteFinancialEntryAction(id) {
+  const { supabase, user, workspaceId } = await requireWorkspace();
+  const { data: entry, error } = await supabase.from("financial_entries").select("project_id,client_id,description,status,paid_amount_cents,projects(slug)").eq("id", id).eq("workspace_id", workspaceId).single();
+  if (error) throw error;
+  if (Number(entry.paid_amount_cents || 0) > 0 || entry.status === "paid" || entry.status === "partially_paid") redirect("/app/financeiro?erro=Um lançamento com pagamento registrado não pode ser excluído. Cancele-o para preservar o histórico financeiro.");
+  const { error: deleteError } = await supabase.from("financial_entries").delete().eq("id", id).eq("workspace_id", workspaceId);
+  if (deleteError) throw deleteError;
+  await supabase.from("activities").insert({ workspace_id: workspaceId, project_id: entry.project_id, client_id: entry.client_id, type: "financial_entry_deleted", description: `Lançamento excluído: ${entry.description}`, actor_id: user.id, actor_name: user.email });
+  revalidatePath("/app/financeiro");
+  if (entry.projects?.slug) revalidatePath(`/app/projetos/${entry.projects.slug}`);
+  redirect("/app/financeiro?sucesso=Lançamento excluído definitivamente");
+}

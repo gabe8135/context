@@ -16,7 +16,7 @@ export async function getProjectDashboard(slug) {
 
   const requests = [
     supabase.from("alerts").select("id,title,severity,recommended_action").eq("project_id", project.id).eq("status", "open").limit(5),
-    supabase.from("tasks").select("id,title,status,priority,due_at").eq("project_id", project.id).not("status", "in", "(cancelled,archived)").order("created_at"),
+    supabase.from("tasks").select("id,title,description,status,priority,starts_at,due_at,next_action,completed_at,created_at").eq("project_id", project.id).not("status", "in", "(cancelled,archived)").order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }),
     supabase.from("financial_entries").select("entry_type,status,amount_cents,paid_amount_cents,due_at,description").eq("project_id", project.id).is("archived_at", null),
     supabase.from("domains").select("domain,status,expires_at").eq("project_id", project.id),
     supabase.from("hosting_accounts").select("provider,status,renews_at").eq("project_id", project.id),
