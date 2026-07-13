@@ -22,7 +22,7 @@ const envPath = resolve(root, ".env.local");
 if (!existsSync(envPath)) failures.push(".env.local ausente");
 else {
   const envText = readFileSync(envPath, "utf8");
-  const requiredEnv = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "CREDENTIALS_ENCRYPTION_KEY"];
+  const requiredEnv = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "CREDENTIALS_ENCRYPTION_KEY", "GROQ_API_KEY"];
   for (const name of requiredEnv) {
     const match = envText.match(new RegExp(`^${name}=(.+)$`, "m"));
     if (!match || !match[1].trim()) failures.push(`Variável ausente: ${name}`);
@@ -32,9 +32,9 @@ else {
 }
 
 const gitignore = existsSync(resolve(root, ".gitignore")) ? readFileSync(resolve(root, ".gitignore"), "utf8") : "";
-if (!/^\.env\.local$/m.test(gitignore) && !/^\.env\*$/m.test(gitignore)) failures.push(".env.local não está protegido pelo .gitignore");
+if (!/^\.env\.local$/m.test(gitignore) && !/^\.env\.\*$/m.test(gitignore) && !/^\.env\*$/m.test(gitignore)) failures.push(".env.local não está protegido pelo .gitignore");
 
-notices.push("Configurar as 3 variáveis de ambiente também na plataforma de hospedagem.");
+notices.push("Configurar as 4 variáveis de ambiente também na plataforma de hospedagem.");
 notices.push("Configurar Site URL e Redirect URLs no Supabase após conhecer o domínio.");
 notices.push("Executar npm run verify antes de publicar.");
 
