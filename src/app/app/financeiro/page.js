@@ -13,7 +13,7 @@ export default async function Finance({ searchParams }) {
   const { supabase, workspaceId } = await requireWorkspace();
   const { projectIds } = await getActiveContextIds(supabase, workspaceId);
   if (!projectIds.length) return <EmptyFinance queryParams={queryParams}/>;
-  let query = supabase.from("financial_entries").select("id,description,entry_type,status,amount_cents,occurred_at,due_at,projects(name,slug),clients(name)").eq("workspace_id", workspaceId).is("archived_at", null).order("created_at", { ascending: false });
+  let query = supabase.from("financial_entries").select("id,description,entry_type,status,amount_cents,paid_amount_cents,category,installment_number,installment_total,occurred_at,due_at,projects(name,slug),clients(name)").eq("workspace_id", workspaceId).is("archived_at", null).order("created_at", { ascending: false });
   query = query.in("project_id", projectIds);
   if (queryParams.tipo) query = query.eq("entry_type", queryParams.tipo);
   if (queryParams.status) query = query.eq("status", queryParams.status);
@@ -21,7 +21,7 @@ export default async function Finance({ searchParams }) {
   if (error) throw error;
   const active = data.filter((entry) => entry.status !== "cancelled");
   const sum = (filter) => active.filter(filter).reduce((total, entry) => total + entry.amount_cents, 0);
-  const received = sum((entry) => entry.entry_type === "income" && entry.status === "paid");
+  const received = active.filter((entry) => entry.entry_type === "income").reduce((total, entry) => total + (entry.paid_amount_cents ?? (entry.status === "paid" ? entry.amount_cents : 0)), 0);
   const costs = sum((entry) => ["expense", "tax", "service_cost", "refund"].includes(entry.entry_type) && entry.status === "paid");
   const discounts = sum((entry) => entry.entry_type === "discount");
   return <AppShell><div className="content">

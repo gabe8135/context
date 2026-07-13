@@ -9,7 +9,7 @@ export function GET() {
     process.env.CREDENTIALS_ENCRYPTION_KEY
   );
   return NextResponse.json(
-    { status: configured ? "ready" : "misconfigured", service: "contexto", timestamp: new Date().toISOString() },
+    { status: configured ? "ready" : "misconfigured", service: "squire", timestamp: new Date().toISOString() },
     { status: configured ? 200 : 503, headers: { "Cache-Control": "no-store" } }
   );
 }

@@ -1,0 +1,11 @@
+begin;
+alter table public.domains add column if not exists archived_at timestamptz;
+alter table public.hosting_accounts add column if not exists archived_at timestamptz;
+alter table public.integrations add column if not exists archived_at timestamptz;
+alter table public.dns_records add column if not exists archived_at timestamptz;
+alter table public.ssl_certificates add column if not exists archived_at timestamptz;
+alter table public.email_services add column if not exists archived_at timestamptz;
+create index if not exists domains_active on public.domains(workspace_id,project_id) where archived_at is null;
+create index if not exists hosting_active on public.hosting_accounts(workspace_id,project_id) where archived_at is null;
+create index if not exists integrations_active on public.integrations(workspace_id,project_id) where archived_at is null;
+commit;

@@ -35,6 +35,11 @@ test("desconto reduz o saldo contratual", () => {
   assert.equal(summary.pending_cents, 390000);
 });
 
+test("pagamento parcial soma somente o valor efetivamente recebido", () => {
+  const summary = calculateFinancialSummary([{ entry_type:"income",status:"partially_paid",amount_cents:700000,paid_amount_cents:300000 }],700000);
+  assert.equal(summary.received_cents,300000);assert.equal(summary.pending_cents,400000);
+});
+
 test("gera atenção apenas dentro da janela de vencimento", () => {
   const now = new Date("2026-07-10T12:00:00Z");
   assert.equal(domainNeedsAlert("2026-07-31", now, 30), true);

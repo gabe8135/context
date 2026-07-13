@@ -17,14 +17,14 @@ export async function getProjectDashboard(slug) {
   const requests = [
     supabase.from("alerts").select("id,title,severity,recommended_action").eq("project_id", project.id).eq("status", "open").limit(5),
     supabase.from("tasks").select("id,title,status,priority,due_at").eq("project_id", project.id).not("status", "in", "(cancelled,archived)").order("created_at"),
-    supabase.from("financial_entries").select("entry_type,status,amount_cents,due_at,description").eq("project_id", project.id).is("archived_at", null),
+    supabase.from("financial_entries").select("entry_type,status,amount_cents,paid_amount_cents,due_at,description").eq("project_id", project.id).is("archived_at", null),
     supabase.from("domains").select("domain,status,expires_at").eq("project_id", project.id),
     supabase.from("hosting_accounts").select("provider,status,renews_at").eq("project_id", project.id),
     supabase.from("integrations").select("name,status").eq("project_id", project.id),
     supabase.from("dns_records").select("name,record_type,status").eq("project_id", project.id),
     supabase.from("ssl_certificates").select("issuer,status,expires_at").eq("project_id", project.id),
     supabase.from("email_services").select("provider,status").eq("project_id", project.id),
-    supabase.from("decisions").select("content,decided_at,responsible_name").eq("project_id", project.id).eq("status", "current").order("decided_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("decisions").select("id,title,content,decided_at,responsible_name").eq("project_id", project.id).eq("status", "current").is("archived_at",null).order("decided_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("activities").select("description,created_at,actor_name,type").eq("project_id", project.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ];
   const results = await Promise.all(requests);

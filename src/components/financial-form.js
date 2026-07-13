@@ -3,6 +3,7 @@ export function FinancialForm({ action, projects, selectedSlug, error, entry = n
   const projectId = entry?.project_id || selected?.id || "";
   const dateValue = (value) => value ? String(value).slice(0, 10) : "";
   const amount = entry ? (entry.amount_cents / 100).toFixed(2).replace(".", ",") : "";
+  const paidAmount = entry ? ((entry.paid_amount_cents || 0) / 100).toFixed(2).replace(".", ",") : "";
   return <form action={action} className="panel form-panel">
     {error && <p className="error">{error}</p>}
     <input type="hidden" name="project_slug" value={selectedSlug || entry?.projects?.slug || ""}/>
@@ -12,6 +13,9 @@ export function FinancialForm({ action, projects, selectedSlug, error, entry = n
       <label className="field"><span>Descrição *</span><input name="description" defaultValue={entry?.description || ""} placeholder="Ex.: Entrada do projeto" required/></label>
       <label className="field"><span>Valor (R$) *</span><input name="amount" defaultValue={amount} inputMode="decimal" placeholder="3000,00" required/></label>
       <label className="field"><span>Status</span><select name="status" defaultValue={entry?.status || "paid"}><option value="paid">Pago</option><option value="pending">Pendente</option><option value="forecast">Previsto</option><option value="overdue">Vencido</option><option value="partially_paid">Parcialmente pago</option><option value="cancelled">Cancelado</option></select></label>
+      <label className="field"><span>Valor já pago (R$)</span><input name="paid_amount" defaultValue={paidAmount} inputMode="decimal" placeholder="0,00"/><small>Preencha no pagamento parcial.</small></label>
+      <label className="field"><span>Categoria</span><input name="category" defaultValue={entry?.category || ""} placeholder="entrada, hospedagem, imposto..."/></label>
+      <label className="field"><span>Parcela</span><div className="inline-fields"><input name="installment_number" type="number" min="1" defaultValue={entry?.installment_number || ""} placeholder="1"/><span>de</span><input name="installment_total" type="number" min="1" defaultValue={entry?.installment_total || ""} placeholder="3"/></div></label>
       <label className="field"><span>Forma de pagamento</span><select name="payment_method" defaultValue={entry?.payment_method || "pix"}><option value="pix">Pix</option><option value="bank_transfer">Transferência</option><option value="cash">Dinheiro</option><option value="credit_card">Cartão de crédito</option><option value="debit_card">Cartão de débito</option><option value="boleto">Boleto</option><option value="other">Outro</option></select></label>
       <label className="field"><span>Data</span><input name="occurred_at" type="date" defaultValue={dateValue(entry?.occurred_at) || new Date().toISOString().slice(0, 10)}/></label>
       <label className="field"><span>Vencimento</span><input name="due_at" type="date" defaultValue={dateValue(entry?.due_at)}/></label>

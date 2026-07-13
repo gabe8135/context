@@ -3,9 +3,9 @@ const openIncomeStatuses = new Set(["forecast", "pending", "overdue", "partially
 export function calculateFinancialSummary(entries, agreedValueCents = 0) {
   const active = entries.filter((item) => item.status !== "cancelled");
   const sum = (filter) => active.filter(filter).reduce((total, item) => total + item.amount_cents, 0);
-  const received = sum((item) => item.entry_type === "income" && item.status === "paid");
+  const received = active.filter((item) => item.entry_type === "income").reduce((total,item)=>total+(item.paid_amount_cents ?? (item.status === "paid" ? item.amount_cents : 0)),0);
   const discounts = sum((item) => item.entry_type === "discount");
-  const scheduledPending = sum((item) => item.entry_type === "income" && openIncomeStatuses.has(item.status));
+  const scheduledPending = active.filter((item)=>item.entry_type==="income"&&openIncomeStatuses.has(item.status)).reduce((total,item)=>total+Math.max(item.amount_cents-(item.paid_amount_cents||0),0),0);
   const contractPending = Math.max(agreedValueCents - received - discounts, 0);
   const pending = agreedValueCents > 0 ? contractPending : scheduledPending;
   const expenses = sum((item) => ["expense", "tax", "service_cost"].includes(item.entry_type) && item.status === "paid");

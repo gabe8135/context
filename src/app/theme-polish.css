@@ -66,6 +66,8 @@ a{color:var(--link)}
 .sidebar{background:var(--sidebar);color:var(--sidebar-text);scrollbar-color:var(--line) transparent}
 .brand{color:var(--sidebar-text)}
 .brand-mark{border-color:color-mix(in srgb,var(--brand) 70%,var(--sidebar-text));color:var(--accent);background:color-mix(in srgb,var(--sidebar-raised) 75%,transparent)}
+.brand{letter-spacing:-.02em}.brand-mark{width:36px;height:36px;border:0;border-radius:12px;color:#f5f3ff;background:linear-gradient(145deg,#8b5cf6,#5b5ee9);box-shadow:0 8px 22px rgba(91,94,233,.28),inset 0 1px 0 rgba(255,255,255,.28)}[data-theme="light"] .brand-mark{color:#fff;background:linear-gradient(145deg,#7257e8,#4f63d8);box-shadow:0 7px 18px rgba(79,99,216,.22)}
+.sidebar .brand>span:last-child{font-size:0}.sidebar .brand>span:last-child:after{content:"Squire";font-size:19px}
 .nav-label,.sidebar-foot{color:var(--sidebar-muted)}
 .sidebar-foot{border-color:color-mix(in srgb,var(--sidebar-muted) 28%,transparent)}
 .nav-link{color:var(--sidebar-text)}

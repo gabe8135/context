@@ -20,7 +20,7 @@ function applyTheme(theme) {
 export function ThemeToggle() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
-    const theme = localStorage.getItem("contexto-theme") === "dark" ? "dark" : "light";
+    const theme = (localStorage.getItem("squire-theme") || localStorage.getItem("contexto-theme")) === "dark" ? "dark" : "light";
     setDark(theme === "dark");
     applyTheme(theme);
   }, []);
@@ -28,7 +28,7 @@ export function ThemeToggle() {
     const next = dark ? "light" : "dark";
     setDark(next === "dark");
     applyTheme(next);
-    localStorage.setItem("contexto-theme", next);
+    localStorage.setItem("squire-theme", next);
   }
   return <button className="theme" onClick={toggle} aria-label="Alternar tema">{dark ? <Sun size={16}/> : <Moon size={16}/>}</button>;
 }

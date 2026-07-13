@@ -10,7 +10,7 @@ export default async function EditFinancialEntry({ params, searchParams }) {
   const query = await searchParams;
   const { supabase, workspaceId } = await requireWorkspace();
   const [entryResult, projectsResult] = await Promise.all([
-    supabase.from("financial_entries").select("id,project_id,description,entry_type,status,amount_cents,occurred_at,due_at,payment_method,notes,projects(slug)").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single(),
+    supabase.from("financial_entries").select("id,project_id,description,entry_type,status,amount_cents,paid_amount_cents,category,installment_number,installment_total,occurred_at,due_at,payment_method,notes,projects(slug)").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single(),
     supabase.from("projects").select("id,name,slug,clients(name)").eq("workspace_id", workspaceId).is("archived_at", null).order("name"),
   ]);
   if (entryResult.error?.code === "PGRST116") notFound();
