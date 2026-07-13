@@ -5,6 +5,7 @@ import { AlertTriangle, BookOpen, CheckCircle2, CheckSquare, Circle, CircleDolla
 import { useState, useTransition } from "react";
 import { toggleTaskAction } from "@/app/app/tarefas/actions";
 import { NaturalCapture } from "./natural-capture";
+import { NoteDetailsModal } from "./note-details-modal";
 import { TaskDetailsModal } from "./task-details-modal";
 
 const money = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(cents / 100);
@@ -13,6 +14,7 @@ const due = (date) => date ? new Date(date).toLocaleDateString("pt-BR") : "Sem p
 export function ProjectDashboard({ project }) {
   const [tasks, setTasks] = useState(project.tasks);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedNote, setSelectedNote] = useState(null);
   const [busy, startTransition] = useTransition();
   const completed = tasks.filter((task) => task.status === "completed").length;
   const open = tasks.filter((task) => task.status !== "completed");
@@ -27,8 +29,7 @@ export function ProjectDashboard({ project }) {
   return <article className="content project-document">
     <header className="project-document-hero">
       <div><div className="eyebrow">{project.client_name} · Projeto {project.status}</div><h1 className="page-title">{project.name}</h1><p className="subtitle">Uma página viva para entender, executar e preservar este projeto.</p></div>
-      <Link className="btn icon-btn" href={`/app/projetos/${project.slug}/editar`}><Pencil size={15}/> Editar</Link>
-      <div className="document-progress"><span><b>{progress}%</b> concluído</span><div className="progress"><i style={{ width: `${progress}%` }}/></div></div>
+      <div className="project-hero-tools"><Link className="btn icon-btn" href={`/app/projetos/${project.slug}/editar`}><Pencil size={15}/> Editar</Link><div className="document-progress"><span><b>{progress}%</b> concluído</span><div className="progress"><i style={{ width: `${progress}%` }}/></div></div></div>
     </header>
 
     <NaturalCapture projectSlug={project.slug}/>
@@ -51,7 +52,7 @@ export function ProjectDashboard({ project }) {
       <SectionTitle icon={BookOpen} title="Caderno do projeto" action={`/app/notas/nova?projeto=${project.slug}`} actionLabel="Nova nota"/>
       <p className="section-description">Notas, decisões e encontros que explicam por que o projeto está assim.</p>
       <div className="knowledge-grid">
-        <KnowledgeBlock icon={FileText} title="Notas" href={`/app/notas?projeto=${project.slug}`} rows={project.notes} render={(note) => ({ title: note.title, meta: note.content?.slice(0, 100), href: `/app/notas/${note.id}` })}/>
+        <KnowledgeBlock icon={FileText} title="Notas" href={`/app/notas?projeto=${project.slug}`} rows={project.notes} onSelect={setSelectedNote} render={(note) => ({ title: note.title, meta: note.content?.slice(0, 100) })}/>
         <KnowledgeBlock icon={Lightbulb} title="Decisão atual" href={`/app/decisoes?projeto=${project.slug}`} rows={project.last_decision?.id ? [project.last_decision] : []} render={(decision) => ({ title: decision.title || "Decisão registrada", meta: decision.content, href: `/app/decisoes?projeto=${project.slug}` })}/>
         <KnowledgeBlock icon={Video} title="Reuniões" href={`/app/reunioes?projeto=${project.slug}`} rows={project.meetings} render={(meeting) => ({ title: meeting.title, meta: due(meeting.scheduled_at), href: `/app/reunioes/${meeting.id}` })}/>
       </div>
@@ -72,11 +73,12 @@ export function ProjectDashboard({ project }) {
       </div>
     </section>
     {selectedTask && <TaskDetailsModal task={selectedTask} projectSlug={project.slug} onClose={() => setSelectedTask(null)}/>} 
+    {selectedNote && <NoteDetailsModal note={selectedNote} onClose={() => setSelectedNote(null)}/>} 
   </article>;
 }
 
 function SectionTitle({ icon: Icon, title, action, actionLabel }) { return <header className="document-section-title"><div><Icon size={19}/><h2>{title}</h2></div>{action && <Link className="btn" href={action}><Plus size={14}/>{actionLabel}</Link>}</header>; }
 function TaskRow({ task, busy, onToggle, onOpen }) { return <div className="document-task"><button className="task-state" disabled={busy} onClick={onToggle} aria-label={task.status === "completed" ? "Reabrir tarefa" : "Concluir tarefa"}>{task.status === "completed" ? <CheckCircle2/> : <Circle/>}</button><button className="task-content" onClick={onOpen}><b className={task.status === "completed" ? "done" : ""}>{task.title}</b><span>{task.priority} · {due(task.due_at)}</span></button></div>; }
 function Stage({ label, count }) { return <div className="stage"><span>{label}</span><b>{count}</b></div>; }
-function KnowledgeBlock({ icon: Icon, title, href, rows = [], render }) { return <div className="knowledge-block"><header><div><Icon size={16}/><b>{title}</b></div><Link href={href}>Abrir tudo</Link></header>{rows.length ? rows.slice(0, 4).map((row) => { const item = render(row); return <Link className="knowledge-row" href={item.href} key={row.id}><b>{item.title}</b><span>{item.meta || "Sem detalhes"}</span></Link>; }) : <Empty text={`Nenhum item em ${title.toLowerCase()}.`}/>}</div>; }
+function KnowledgeBlock({ icon: Icon, title, href, rows = [], render, onSelect }) { return <div className="knowledge-block"><header><div><Icon size={16}/><b>{title}</b></div><Link href={href}>Abrir tudo</Link></header>{rows.length ? rows.slice(0, 4).map((row) => { const item = render(row); return onSelect ? <button type="button" className="knowledge-row" onClick={() => onSelect(row)} key={row.id}><b>{item.title}</b><span>{item.meta || "Sem detalhes"}</span></button> : <Link className="knowledge-row" href={item.href} key={row.id}><b>{item.title}</b><span>{item.meta || "Sem detalhes"}</span></Link>; }) : <Empty text={`Nenhum item em ${title.toLowerCase()}.`}/>}</div>; }
 function Empty({ text }) { return <div className="document-empty">{text}</div>; }
