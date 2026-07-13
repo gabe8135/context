@@ -26,11 +26,15 @@ export async function getProjectDashboard(slug) {
     supabase.from("email_services").select("provider,status").eq("project_id", project.id),
     supabase.from("decisions").select("id,title,content,decided_at,responsible_name").eq("project_id", project.id).eq("status", "current").is("archived_at",null).order("decided_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("activities").select("description,created_at,actor_name,type").eq("project_id", project.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("notes").select("id,title,content,status,updated_at").eq("project_id", project.id).is("archived_at", null).order("updated_at", { ascending: false }).limit(5),
+    supabase.from("meetings").select("id,title,scheduled_at,summary").eq("project_id", project.id).is("archived_at", null).order("scheduled_at", { ascending: false }).limit(4),
+    supabase.from("deliverables").select("id,name,status,due_at").eq("project_id", project.id).is("archived_at", null).order("due_at", { ascending: true, nullsFirst: false }).limit(5),
+    supabase.from("files").select("id,logical_name,version,created_at").eq("project_id", project.id).eq("is_current", true).is("archived_at", null).order("created_at", { ascending: false }).limit(5),
   ];
   const results = await Promise.all(requests);
   const failed = results.find(result => result.error);
   if (failed) throw failed.error;
-  const [storedAlerts, tasks, entries, domains, hosting, integrations, dns, ssl, email, decision, activity] = results.map(result => result.data || (result.data === null ? null : []));
+  const [storedAlerts, tasks, entries, domains, hosting, integrations, dns, ssl, email, decision, activity, notes, meetings, deliverables, files] = results.map(result => result.data || (result.data === null ? null : []));
   const rows = entries || [];
   const financial = calculateFinancialSummary(rows, project.agreed_value_cents);
   financial.overdue_cents = rows.filter(x => x.status !== "cancelled" && x.entry_type === "income" && (x.status === "overdue" || isPast(x.due_at) && x.status !== "paid")).reduce((total, item) => total + item.amount_cents, 0);
@@ -42,6 +46,10 @@ export async function getProjectDashboard(slug) {
     client_name: project.clients?.name,
     alerts: [...(storedAlerts || []), ...automaticAlerts].slice(0, 8),
     tasks: tasks || [],
+    notes: notes || [],
+    meetings: meetings || [],
+    deliverables: deliverables || [],
+    files: files || [],
     financial,
     infrastructure: [
       ...(domains || []).map(x => ({ name: "Domínio", detail: x.domain, status: x.status })),

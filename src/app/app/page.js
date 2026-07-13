@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { AlertTriangle, CalendarCheck, FolderKanban } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { NaturalCapture } from "@/components/natural-capture";
 import { requireWorkspace } from "@/lib/auth-context";
 import { getActiveContextIds } from "@/lib/active-context";
 
@@ -7,23 +9,33 @@ export const dynamic = "force-dynamic";
 
 export default async function Overview() {
   const { supabase, workspaceId } = await requireWorkspace();
-  const { clientIds, projectIds } = await getActiveContextIds(supabase, workspaceId);
+  const { projectIds } = await getActiveContextIds(supabase, workspaceId);
   const empty = Promise.resolve({ data: [], error: null });
-  const [projects, tasks, clients, finance, activities] = await Promise.all([
-    projectIds.length ? supabase.from("projects").select("id,name,slug,status,progress,clients(name)").eq("workspace_id", workspaceId).in("id", projectIds) : empty,
-    projectIds.length ? supabase.from("tasks").select("id,title,due_at,status,projects(name,slug)").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("due_at", { ascending: true, nullsFirst: false }).limit(8) : empty,
-    clientIds.length ? supabase.from("clients").select("id").eq("workspace_id", workspaceId).in("id", clientIds) : empty,
-    projectIds.length ? supabase.from("financial_entries").select("entry_type,status,amount_cents").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null) : empty,
-    projectIds.length ? supabase.from("activities").select("id,description,created_at,projects(name,slug)").eq("workspace_id", workspaceId).in("project_id", projectIds).order("created_at", { ascending: false }).limit(8) : empty,
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(todayStart); tomorrow.setDate(tomorrow.getDate() + 1);
+  const [projects, tasks] = await Promise.all([
+    projectIds.length ? supabase.from("projects").select("id,name,slug,status,progress,last_activity_at,clients(name)").eq("workspace_id", workspaceId).in("id", projectIds).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(6) : empty,
+    projectIds.length ? supabase.from("tasks").select("id,title,due_at,status,priority,projects(name,slug)").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("due_at", { ascending: true, nullsFirst: false }).limit(30) : empty,
   ]);
-  const failed = [projects, tasks, clients, finance, activities].find((result) => result.error);
-  if (failed) throw failed.error;
-  const received = (finance.data || []).filter((entry) => entry.entry_type === "income" && entry.status === "paid").reduce((sum, entry) => sum + entry.amount_cents, 0);
-  const now = new Date();
-  const overdue = (tasks.data || []).filter((task) => task.due_at && new Date(task.due_at) < now).length;
-  return <AppShell><div className="content"><div className="project-head"><div><div className="eyebrow">Visão geral</div><h1 className="page-title">Seu trabalho em um só lugar</h1><p className="subtitle">Resumo real do workspace e próximas ações.</p></div><div className="actions"><Link className="btn" href="/app/clientes/novo">Novo cliente</Link><Link className="btn primary" href="/app/projetos/novo">Novo projeto</Link></div></div><section className="metrics"><Metric label="Projetos ativos" value={(projects.data || []).filter((project) => project.status === "active").length}/><Metric label="Clientes" value={clients.data?.length || 0}/><Metric label="Tarefas atrasadas" value={overdue}/><Metric label="Recebido" value={money(received)}/></section><div className="dashboard-grid"><List title="Próximas tarefas" rows={tasks.data || []} render={(item) => [item.title, `${item.projects?.name || "Sem projeto"} · ${item.due_at ? new Date(item.due_at).toLocaleDateString("pt-BR") : "Sem prazo"}`, item.projects?.slug ? `/app/projetos/${item.projects.slug}` : "/app/tarefas"]}/><List title="Atividade recente" rows={activities.data || []} render={(item) => [item.description, new Date(item.created_at).toLocaleString("pt-BR"), item.projects?.slug ? `/app/projetos/${item.projects.slug}` : "/app/projetos"]}/></div><section className="panel" style={{ marginTop: 20 }}><div className="panel-head"><div className="panel-title">Projetos</div><Link href="/app/projetos">Ver todos</Link></div>{(projects.data || []).length ? (projects.data || []).slice(0, 6).map((project) => <Link className="item" href={`/app/projetos/${project.slug}`} key={project.id}><div className="item-main"><div className="item-title">{project.name}</div><div className="meta">{project.clients?.name} · {project.status} · {project.progress}%</div></div></Link>) : <div className="empty">Nenhum projeto ativo.</div>}</section></div></AppShell>;
+  if (projects.error || tasks.error) throw projects.error || tasks.error;
+  const rows = tasks.data || [];
+  const today = rows.filter((task) => task.due_at && new Date(task.due_at) >= todayStart && new Date(task.due_at) < tomorrow);
+  const overdue = rows.filter((task) => task.due_at && new Date(task.due_at) < todayStart);
+
+  return <AppShell><div className="content workspace-home">
+    <header className="home-welcome"><div><div className="eyebrow">Seu espaço de trabalho</div><h1 className="page-title">O que precisa da sua atenção?</h1><p className="subtitle">Comece pelo que importa. O restante continua guardado no contexto certo.</p></div></header>
+    <NaturalCapture/>
+    <div className="home-focus-grid">
+      <FocusList icon={CalendarCheck} title="Hoje" rows={today} empty="Nenhuma tarefa para hoje."/>
+      <FocusList icon={AlertTriangle} title="Atrasados" rows={overdue} empty="Nada atrasado. Ótimo ritmo." danger/>
+    </div>
+    <section className="recent-projects-section">
+      <div className="section-heading"><div><span className="eyebrow">Continue de onde parou</span><h2>Projetos recentes</h2></div><Link className="btn" href="/app/projetos">Ver todos</Link></div>
+      <div className="project-folder-grid">{(projects.data || []).map((project) => <Link className="project-folder-card" href={`/app/projetos/${project.slug}`} key={project.id}><span className="folder-card-icon"><FolderKanban size={19}/></span><div><b>{project.name}</b><span>{project.clients?.name || "Sem cliente"}</span></div><div className="folder-progress"><i style={{ width: `${project.progress || 0}%` }}/></div><small>{project.progress || 0}% concluído</small></Link>)}{!projects.data?.length && <div className="empty-state-card">Nenhum projeto ativo. <Link href="/app/projetos/novo">Crie o primeiro projeto</Link>.</div>}</div>
+    </section>
+  </div></AppShell>;
 }
 
-function Metric({ label, value }) { return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value mono">{value}</div></div>; }
-function List({ title, rows, render }) { return <section className="panel"><div className="panel-head"><div className="panel-title">{title}</div><span className="badge">{rows.length}</span></div>{rows.length ? rows.map((item) => { const [name, meta, href] = render(item); return <Link className="item" href={href} key={item.id}><div><div className="item-title">{name}</div><div className="meta">{meta}</div></div></Link>; }) : <div className="empty">Nada pendente nesta seção.</div>}</section>; }
-function money(cents) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(cents / 100); }
+function FocusList({ icon: Icon, title, rows, empty, danger = false }) {
+  return <section className={`focus-list ${danger ? "danger" : ""}`}><header><div><Icon size={18}/><h2>{title}</h2></div><span className="badge">{rows.length}</span></header><div>{rows.length ? rows.slice(0, 7).map((task) => <Link className="focus-task" href={`/app/tarefas/${task.id}`} key={task.id}><div><b>{task.title}</b><span>{task.projects?.name || "Sem projeto"} · {task.priority}</span></div>{task.due_at && <time>{new Date(task.due_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</time>}</Link>) : <p className="focus-empty">{empty}</p>}</div></section>;
+}

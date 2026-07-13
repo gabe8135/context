@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Archive, FolderKanban, Mail, MessageCircle, Pencil, Phone, Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { requireWorkspace } from "@/lib/auth-context";
 import { archiveClientAction } from "../actions";
@@ -8,19 +9,18 @@ export default async function ClientDetail({ params, searchParams }) {
   const { id } = await params;
   const query = await searchParams;
   const { supabase, workspaceId } = await requireWorkspace();
-  const { data: client, error } = await supabase.from("clients").select("*,projects(id,name,slug,status,progress)").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single();
+  const { data: client, error } = await supabase.from("clients").select("*,projects(id,name,slug,status,progress,last_activity_at)").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single();
   if (error?.code === "PGRST116") notFound();
   if (error) throw error;
+  const projects = [...(client.projects || [])].sort((a, b) => new Date(b.last_activity_at || 0) - new Date(a.last_activity_at || 0));
   const archive = archiveClientAction.bind(null, id);
-  return <AppShell context={{ type: "client", ...client }}><div className="content">
-    <Link className="back-link" href="/app/clientes">← Clientes</Link>
-    <div className="project-head"><div><div className="eyebrow">Cliente · {client.status === "active" ? "Ativo" : "Inativo"}</div><h1 className="page-title">{client.name}</h1><p className="subtitle">{client.legal_name || "Contexto central do relacionamento"}</p></div><div className="actions"><Link className="btn primary" href={`/app/clientes/${id}/editar`}>Editar cliente</Link><form action={archive}><button className="btn" type="submit">Arquivar</button></form></div></div>
+  return <AppShell context={{ type: "client", ...client, projects }}><div className="content client-folder-page">
+    <header className="client-folder-head"><div><div className="eyebrow">Pasta do cliente</div><h1 className="page-title">{client.name}</h1><p className="subtitle">Tudo que pertence a este cliente começa pelos projetos.</p></div><div className="actions"><Link className="btn" href={`/app/clientes/${id}/editar`}><Pencil size={14}/> Editar</Link><form action={archive}><button className="btn" type="submit"><Archive size={14}/> Arquivar</button></form></div></header>
     {query.sucesso && <p className="success-note">{query.sucesso}</p>}
-    <div className="dashboard-grid" style={{ marginTop: 25 }}><section className="panel"><header className="panel-head"><div className="panel-title">Contato</div></header><div className="panel-body"><Info label="E-mail" value={client.email}/><Info label="Telefone" value={client.phone}/><Info label="WhatsApp" value={client.whatsapp}/><Info label="Origem" value={client.source}/></div></section><section className="panel"><header className="panel-head"><div className="panel-title">Projetos</div><span className="badge">{client.projects.length}</span></header><div className="panel-body">{client.projects.length ? client.projects.map((project) => <Link className="item" style={{ textDecoration: "none", color: "inherit" }} href={`/app/projetos/${project.slug}`} key={project.id}><div className="item-main"><div className="item-title">{project.name}</div><div className="meta">{project.status} · {project.progress}%</div></div></Link>) : <p className="meta">Nenhum projeto vinculado.</p>}</div></section></div>
-    {client.notes && <section className="panel" style={{ marginTop: 20 }}><header className="panel-head"><div className="panel-title">Observações</div></header><div className="panel-body"><p>{client.notes}</p></div></section>}
+    <section className="client-contact-strip"><Contact icon={Mail} label="E-mail" value={client.email}/><Contact icon={Phone} label="Telefone" value={client.phone}/><Contact icon={MessageCircle} label="WhatsApp" value={client.whatsapp}/></section>
+    <section className="client-project-folder"><div className="section-heading"><div><span className="eyebrow">Conteúdo da pasta</span><h2>Projetos</h2></div><Link className="btn primary" href={`/app/projetos/novo?cliente=${id}`}><Plus size={15}/> Novo projeto</Link></div><div className="project-folder-grid">{projects.map((project) => <Link className="project-folder-card" href={`/app/projetos/${project.slug}`} key={project.id}><span className="folder-card-icon"><FolderKanban size={19}/></span><div><b>{project.name}</b><span>{project.status === "active" ? "Projeto ativo" : project.status}</span></div><div className="folder-progress"><i style={{ width: `${project.progress || 0}%` }}/></div><small>{project.progress || 0}% concluído</small></Link>)}{!projects.length && <div className="empty-state-card">Esta pasta ainda não possui projetos.</div>}</div></section>
+    {client.notes && <section className="client-folder-note"><span className="eyebrow">Sobre o cliente</span><p>{client.notes}</p></section>}
   </div></AppShell>;
 }
 
-function Info({ label, value }) {
-  return <div className="item"><div className="item-main"><div className="meta">{label}</div><div className="item-title">{value || "Não informado"}</div></div></div>;
-}
+function Contact({ icon: Icon, label, value }) { return <div><Icon size={16}/><span><small>{label}</small><b>{value || "Não informado"}</b></span></div>; }
