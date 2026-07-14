@@ -18,3 +18,31 @@
 /* Campo compacto sem scrollbar invadindo os cantos */
 .project-document>.natural-capture textarea{scrollbar-width:none;-ms-overflow-style:none}.project-document>.natural-capture textarea::-webkit-scrollbar{display:none}
 @media(min-width:901px){.project-document>.natural-capture textarea{overflow-y:auto;transition:height .18s ease,min-height .18s ease}.project-document>.natural-capture textarea:focus{height:72px;min-height:72px}}
+
+/* Composicao editorial compacta da pagina de projeto */
+@media(min-width:901px){
+  .project-document{max-width:1200px;padding-top:22px;padding-bottom:56px}
+  .project-document-hero{grid-template-columns:minmax(0,1fr) 180px;align-items:center;padding-bottom:14px}
+  .project-document-hero .page-title{font-size:40px;line-height:1.05;margin:3px 0 5px}
+  .project-document-hero .subtitle{margin:0;font-size:15px}
+  .project-hero-tools{gap:11px}
+  .document-progress{width:180px}
+  .project-document>.natural-capture{grid-template-columns:230px minmax(0,1fr) auto;margin:12px 0;padding:10px 14px}
+  .project-document>.natural-capture textarea{height:42px;min-height:42px;padding:9px 12px}
+  .document-work-grid{grid-template-columns:minmax(0,1.55fr) minmax(350px,.85fr);gap:28px}
+  .document-work-grid>.document-section{padding:17px 0 19px}
+  .document-work-grid .stage-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .document-work-grid .stage{min-height:64px;padding:9px 10px;align-items:flex-start;flex-direction:column}
+  .document-work-grid .stage span{font-size:11px}
+  .document-work-grid .stage b{font-size:18px}
+  .document-work-grid .completed-work{margin-top:8px}
+  .document-section{padding:18px 0}
+  .document-section-title{margin-bottom:11px}
+  .section-description{margin:-5px 0 13px}
+  .knowledge-grid{gap:10px}
+  .knowledge-block>header{padding:10px 12px}
+  .knowledge-row{padding:8px 12px}
+  .document-empty{padding:13px 12px}
+  .structured-cards{gap:10px}
+  .structured-cards>button{padding:10px 12px}
+}
