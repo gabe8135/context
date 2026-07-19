@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { NaturalCapture } from "@/components/natural-capture";
 import { requireWorkspace } from "@/lib/auth-context";
 import { getActiveContextIds } from "@/lib/active-context";
+import { calculateProjectProgress } from "@/lib/project-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +14,21 @@ export default async function Overview() {
   const empty = Promise.resolve({ data: [], error: null });
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const tomorrow = new Date(todayStart); tomorrow.setDate(tomorrow.getDate() + 1);
-  const [projects, tasks] = await Promise.all([
+  const [projects, tasks, projectTasks] = await Promise.all([
     projectIds.length ? supabase.from("projects").select("id,name,slug,status,progress,last_activity_at,clients(name)").eq("workspace_id", workspaceId).in("id", projectIds).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(6) : empty,
     projectIds.length ? supabase.from("tasks").select("id,title,due_at,status,priority,projects(name,slug)").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("due_at", { ascending: true, nullsFirst: false }).limit(30) : empty,
+    projectIds.length ? supabase.from("tasks").select("project_id,status").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null).not("status", "in", "(cancelled,archived)") : empty,
   ]);
-  if (projects.error || tasks.error) throw projects.error || tasks.error;
+  if (projects.error || tasks.error || projectTasks.error) throw projects.error || tasks.error || projectTasks.error;
   const rows = tasks.data || [];
+  const tasksByProject = (projectTasks.data || []).reduce((groups, task) => {
+    (groups[task.project_id] ||= []).push(task);
+    return groups;
+  }, {});
+  const recentProjects = (projects.data || []).map((project) => ({
+    ...project,
+    progress: calculateProjectProgress(tasksByProject[project.id] || [], project.status),
+  }));
   const today = rows.filter((task) => task.due_at && new Date(task.due_at) >= todayStart && new Date(task.due_at) < tomorrow);
   const overdue = rows.filter((task) => task.due_at && new Date(task.due_at) < todayStart);
 
@@ -31,7 +41,7 @@ export default async function Overview() {
     </div>
     <section className="recent-projects-section">
       <div className="section-heading"><div><span className="eyebrow">Continue de onde parou</span><h2>Projetos recentes</h2></div><Link className="btn" href="/app/projetos">Ver todos</Link></div>
-      <div className="project-folder-grid">{(projects.data || []).map((project) => <Link className="project-folder-card" href={`/app/projetos/${project.slug}`} key={project.id}><span className="folder-card-icon"><FolderKanban size={19}/></span><div><b>{project.name}</b><span>{project.clients?.name || "Sem cliente"}</span></div><div className="folder-progress"><i style={{ width: `${project.progress || 0}%` }}/></div><small>{project.progress || 0}% concluído</small></Link>)}{!projects.data?.length && <div className="empty-state-card">Nenhum projeto ativo. <Link href="/app/projetos/novo">Crie o primeiro projeto</Link>.</div>}</div>
+      <div className="project-folder-grid">{recentProjects.map((project) => <Link className="project-folder-card" href={`/app/projetos/${project.slug}`} key={project.id}><span className="folder-card-icon"><FolderKanban size={19}/></span><div><b>{project.name}</b><span>{project.clients?.name || "Sem cliente"}</span></div><div className="folder-progress"><i style={{ width: `${project.progress}%` }}/></div><small>{project.progress}% concluído</small></Link>)}{!recentProjects.length && <div className="empty-state-card">Nenhum projeto ativo. <Link href="/app/projetos/novo">Crie o primeiro projeto</Link>.</div>}</div>
     </section>
   </div></AppShell>;
 }

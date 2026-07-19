@@ -8,6 +8,7 @@ import { NaturalCapture } from "./natural-capture";
 import { NoteDetailsModal } from "./note-details-modal";
 import { ProjectInfoModal } from "./project-info-modal";
 import { TaskDetailsModal } from "./task-details-modal";
+import { calculateProjectProgress } from "@/lib/project-progress";
 
 const money = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(cents / 100);
 const due = (date) => date ? new Date(date).toLocaleDateString("pt-BR") : "Sem prazo";
@@ -20,7 +21,7 @@ export function ProjectDashboard({ project }) {
   const [busy, startTransition] = useTransition();
   const completed = tasks.filter((task) => task.status === "completed").length;
   const open = tasks.filter((task) => task.status !== "completed");
-  const progress = tasks.length ? Math.round(completed / tasks.length * 100) : project.progress;
+  const progress = calculateProjectProgress(tasks, project.status);
 
   function toggle(task) {
     const markCompleted = task.status !== "completed";
