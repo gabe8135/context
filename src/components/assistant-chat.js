@@ -7,7 +7,7 @@ function initialMessage(context) {
   return {
     role: "assistant",
     content: context.type === "general"
-      ? "Estou na visão geral. Posso consultar seus projetos e propor tarefas, notas ou decisões."
+      ? "Estou na visão geral. Posso organizar sua agenda pessoal, consultar projetos e propor tarefas ou notas para você confirmar."
       : `Estou no contexto de ${context.type === "project" ? "projeto" : "cliente"}: ${context.name}. Minhas respostas ficarão restritas a ele.`,
   };
 }
@@ -118,7 +118,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   }
 
   const returnQuery = context.type === "project" ? `?projeto=${encodeURIComponent(context.slug)}` : context.type === "client" ? `?cliente=${encodeURIComponent(context.id)}` : "";
-  const names = useMemo(() => new Map(projects.map((project) => [project.id, project.name])), [projects]);
+  const names = useMemo(() => new Map([[null, "Pessoal"], ...projects.map((project) => [project.id, project.name])]), [projects]);
 
   return <div className="assistant-layout">
     <section className="panel assistant-chat-panel">

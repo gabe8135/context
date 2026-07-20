@@ -66,9 +66,9 @@ export const assistantSchema = {
         properties: {
           type: { type: "string", enum: ["task", "note", "decision"] }, title: { type: "string" }, content: { type: "string" },
           project_id: { type: ["string", "null"] }, status: { type: "string", enum: ["todo", "completed", "active", "current"] },
-          priority: { type: "string", enum: ["low", "medium", "high", "urgent"] }, rationale: { type: "string" },
+          priority: { type: "string", enum: ["low", "medium", "high", "urgent"] }, due_at: { type: ["string", "null"] }, rationale: { type: "string" },
         },
-        required: ["type", "title", "content", "project_id", "status", "priority", "rationale"],
+        required: ["type", "title", "content", "project_id", "status", "priority", "due_at", "rationale"],
       },
     },
   },
