@@ -64,3 +64,37 @@ export async function restoreProjectAction(id) {
   revalidatePath("/app/arquivados");
   redirect("/app/arquivados?sucesso=Projeto restaurado");
 }
+
+export async function deleteProjectAction(id) {
+  const { supabase, workspaceId, role } = await requireWorkspace();
+  if (!['owner', 'admin'].includes(role)) redirect("/app/arquivados?erro=Apenas administradores podem excluir projetos definitivamente");
+
+  const { data: project, error: findError } = await supabase.from("projects").select("id,name").eq("id", id).eq("workspace_id", workspaceId).not("archived_at", "is", null).single();
+  if (findError) redirect("/app/arquivados?erro=Arquive o projeto antes de excluí-lo definitivamente");
+
+  const dependentTables = [
+    "tasks", "decisions", "alerts", "financial_entries", "domains", "hosting_accounts", "integrations",
+    "notes", "meetings", "inbox_items", "procedures", "deliverables", "credentials", "files",
+    "dns_records", "ssl_certificates", "email_services", "calendar_events",
+  ];
+  const checks = await Promise.all([
+    ...dependentTables.map((table) => supabase.from(table).select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("project_id", id)),
+    supabase.from("entity_relations").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("source_type", "project").eq("source_id", id),
+    supabase.from("entity_relations").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("target_type", "project").eq("target_id", id),
+    supabase.from("entity_tags").select("entity_id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("entity_type", "project").eq("entity_id", id),
+  ]);
+  const checkError = checks.find((result) => result.error)?.error;
+  if (checkError) throw checkError;
+  const relatedItems = checks.reduce((total, result) => total + (result.count || 0), 0);
+  if (relatedItems > 0) redirect(`/app/arquivados?erro=${encodeURIComponent(`O projeto “${project.name}” possui ${relatedItems} registro(s) relacionado(s). Por segurança, mantenha-o arquivado.`)}`);
+
+  const { error: activityError } = await supabase.from("activities").delete().eq("workspace_id", workspaceId).eq("project_id", id);
+  if (activityError) throw activityError;
+  const { error: deleteError } = await supabase.from("projects").delete().eq("id", id).eq("workspace_id", workspaceId);
+  if (deleteError) throw deleteError;
+
+  revalidatePath("/app");
+  revalidatePath("/app/projetos");
+  revalidatePath("/app/arquivados");
+  redirect("/app/arquivados?sucesso=Projeto excluído definitivamente");
+}

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Archive, RotateCcw } from "lucide-react";
+import { Archive, RotateCcw, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireWorkspace } from "@/lib/auth-context";
 import { restoreClientAction } from "@/app/app/clientes/actions";
-import { restoreProjectAction } from "@/app/app/projetos/actions";
+import { deleteProjectAction, restoreProjectAction } from "@/app/app/projetos/actions";
 import { restoreTaskAction } from "@/app/app/tarefas/actions";
 import { restoreNoteAction } from "@/app/app/notas/actions";
 
@@ -25,7 +26,7 @@ export default async function Archived({ searchParams }) {
   const [clients, projects, tasks, notes, meetings] = results.map((result) => result.data || []);
   return <AppShell><div className="content"><div className="eyebrow">Memória preservada</div><h1 className="page-title">Arquivados</h1><p className="subtitle">Itens arquivados não entram na operação nem nos totais financeiros. Restaure quando precisar.</p>{query.sucesso && <p className="success-note">{query.sucesso}</p>}{query.erro && <p className="error">{query.erro}</p>}<div className="archive-grid">
     <ArchiveSection title="Clientes" items={clients} render={(item) => <><div className="item-main"><div className="item-title">{item.name}</div><ArchiveDate value={item.archived_at}/></div><form action={restoreClientAction.bind(null, item.id)}><button className="btn"><RotateCcw size={14}/> Desarquivar</button></form></>}/>
-    <ArchiveSection title="Projetos" items={projects} render={(item) => <><div className="item-main"><div className="item-title">{item.name}</div><div className="meta">Cliente: {item.clients?.name || "—"}{item.clients?.archived_at ? " · desarquive o cliente primeiro" : ""}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/projetos/${item.slug}`}>Consultar</Link><form action={restoreProjectAction.bind(null, item.id)}><button className="btn" disabled={Boolean(item.clients?.archived_at)}><RotateCcw size={14}/> Desarquivar</button></form></div></>}/>
+    <ArchiveSection title="Projetos" items={projects} render={(item) => <><div className="item-main"><div className="item-title">{item.name}</div><div className="meta">Cliente: {item.clients?.name || "—"}{item.clients?.archived_at ? " · desarquive o cliente primeiro" : ""}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/projetos/${item.slug}`}>Consultar</Link><form action={restoreProjectAction.bind(null, item.id)}><button className="btn" disabled={Boolean(item.clients?.archived_at)}><RotateCcw size={14}/> Desarquivar</button></form><form action={deleteProjectAction.bind(null, item.id)}><ConfirmSubmitButton className="btn danger" message={`Excluir definitivamente o projeto “${item.name}”? Isso só será permitido se ele estiver vazio e não poderá ser desfeito.`}><Trash2 size={14}/> Excluir</ConfirmSubmitButton></form></div></>}/>
     <ArchiveSection title="Tarefas" items={tasks} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/tarefas/${item.id}`}>Consultar</Link><form action={restoreTaskAction.bind(null,item.id)}><button className="btn"><RotateCcw size={14}/> Desarquivar</button></form></div></>}/>
     <ArchiveSection title="Notas" items={notes} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><div className="table-actions"><Link className="btn" href={`/app/notas/${item.id}`}>Consultar</Link><form action={restoreNoteAction.bind(null,item.id)}><button className="btn"><RotateCcw size={14}/> Desarquivar</button></form></div></>}/>
     <ArchiveSection title="Reuniões" items={meetings} render={(item) => <><div className="item-main"><div className="item-title">{item.title}</div><ArchiveDate value={item.archived_at}/></div><Link className="btn" href={`/app/reunioes/${item.id}`}>Consultar</Link></>}/>

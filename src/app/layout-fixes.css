@@ -67,6 +67,32 @@
   .data-panel td:first-child::before{color:var(--brand)}
   .data-panel .table-actions{justify-content:flex-start;flex-wrap:wrap}
   .data-panel .progress{max-width:100%;width:100%!important}
+
+  /* Listagens operacionais: no celular mostramos apenas o necessário para decidir e abrir. */
+  .projects-list-page .data-panel td[data-label="Prazo"],
+  .clients-list-page .data-panel td[data-label="Contato"],
+  .clients-list-page .data-panel td[data-label="Status"],
+  .notes-list-page .data-panel td[data-label="Estado"]{display:none}
+
+  .projects-list-page .data-panel td:first-child .meta,
+  .clients-list-page .data-panel td:first-child .meta{display:none}
+
+  .projects-list-page .data-panel td[data-label="Ações"] form,
+  .tasks-list-page .data-panel td[data-label="Ações"] form,
+  .notes-list-page .data-panel td[data-label="Ações"] form{display:none}
+
+  .clients-list-page .data-panel tr{grid-template-columns:minmax(0,1fr) auto;align-items:end}
+  .clients-list-page .data-panel td[data-label="Projetos"]{grid-column:1}
+  .clients-list-page .data-panel td[data-label="Informação"]{grid-column:2}
+  .clients-list-page .data-panel td[data-label="Informação"]::before{display:none}
+
+  .scoped-list-page .data-panel td[data-label="Projeto"]{display:none}
+  .notes-list-page .data-panel td:first-child .meta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .mobile-compact-list .data-panel tr,
+  .projects-list-page .data-panel tr,
+  .clients-list-page .data-panel tr,
+  .tasks-list-page .data-panel tr,
+  .notes-list-page .data-panel tr{padding:12px 14px}
 }
 
 @media(max-width:480px){

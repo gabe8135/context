@@ -10,7 +10,7 @@ export async function getProjectDashboard(slug) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { project: demoProject, preview: true };
-  const { data: project, error } = await supabase.from("projects").select("id,slug,name,status,priority,agreed_value_cents,progress,last_activity_at,clients(name)").eq("slug", slug).single();
+  const { data: project, error } = await supabase.from("projects").select("id,slug,name,status,priority,agreed_value_cents,last_activity_at,clients(name)").eq("slug", slug).single();
   if (error?.code === "PGRST116") return { project: demoProject, preview: true };
   if (error) throw error;
 

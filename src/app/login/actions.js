@@ -23,7 +23,7 @@ export async function login(formData) {
     password: String(formData.get("password")),
   });
   if (error) redirect(`/login?erro=${encodeURIComponent(loginMessage(error))}`);
-  redirect("/app/projetos");
+  redirect("/app");
 }
 
 export async function signup(formData) {
@@ -37,7 +37,7 @@ export async function signup(formData) {
     options: { emailRedirectTo: `${origin}/auth/callback` },
   });
   if (error) redirect(`/login?erro=${encodeURIComponent(error.message)}`);
-  if (data.session) redirect("/app/projetos");
+  if (data.session) redirect("/app");
   redirect(`/login?mensagem=${encodeURIComponent("Conta criada. Abra o e-mail de confirmação antes de entrar.")}`);
 }
 

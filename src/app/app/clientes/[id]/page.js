@@ -3,16 +3,29 @@ import { notFound } from "next/navigation";
 import { Archive, FolderKanban, Mail, MessageCircle, Pencil, Phone, Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { requireWorkspace } from "@/lib/auth-context";
+import { calculateProjectProgress } from "@/lib/project-progress";
 import { archiveClientAction } from "../actions";
 
 export default async function ClientDetail({ params, searchParams }) {
   const { id } = await params;
   const query = await searchParams;
   const { supabase, workspaceId } = await requireWorkspace();
-  const { data: client, error } = await supabase.from("clients").select("*,projects(id,name,slug,status,progress,last_activity_at)").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single();
+  const { data: client, error } = await supabase.from("clients").select("*,projects(id,name,slug,status,last_activity_at)").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single();
   if (error?.code === "PGRST116") notFound();
   if (error) throw error;
-  const projects = [...(client.projects || [])].sort((a, b) => new Date(b.last_activity_at || 0) - new Date(a.last_activity_at || 0));
+  const projectIds = (client.projects || []).map((project) => project.id);
+  const { data: projectTasks, error: tasksError } = projectIds.length
+    ? await supabase.from("tasks").select("project_id,status").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null)
+    : { data: [], error: null };
+  if (tasksError) throw tasksError;
+  const tasksByProject = (projectTasks || []).reduce((groups, task) => {
+    (groups[task.project_id] ||= []).push(task);
+    return groups;
+  }, {});
+  const projects = (client.projects || []).map((project) => ({
+    ...project,
+    progress: calculateProjectProgress(tasksByProject[project.id] || [], project.status),
+  })).sort((a, b) => new Date(b.last_activity_at || 0) - new Date(a.last_activity_at || 0));
   const archive = archiveClientAction.bind(null, id);
   return <AppShell context={{ type: "client", ...client, projects }}><div className="content client-folder-page">
     <header className="client-folder-head"><div><div className="eyebrow">Pasta do cliente</div><h1 className="page-title">{client.name}</h1><p className="subtitle">Tudo que pertence a este cliente começa pelos projetos.</p></div><div className="actions"><Link className="btn" href={`/app/clientes/${id}/editar`}><Pencil size={14}/> Editar</Link><form action={archive}><button className="btn" type="submit"><Archive size={14}/> Arquivar</button></form></div></header>
