@@ -8,6 +8,7 @@ import { ResponsiveTables } from "./responsive-tables";
 import { CalendarQuickView } from "./calendar-quick-view";
 import { ThemeToggle } from "./theme-toggle";
 import { ActiveNavLink } from "./active-nav-link";
+import { PushNotificationControl } from "./push-notification-control";
 
 const general = [
   { label: "Principal", items: [[LayoutDashboard, "Início", "/app"], [BrainCircuit, "Capturar e organizar", "/app/organizar"], [CalendarDays, "Agenda", "/app/agenda"], [Users, "Clientes", "/app/clientes"], [FolderKanban, "Projetos", "/app/projetos"]] },
@@ -53,6 +54,7 @@ export function AppShell({ children, preview = false, context = null }) {
         </div>
       </header>
       {context && <div className="context-strip" role="status"><div className="context-mobile-card"><small>{context.type === "project" ? "PROJETO" : "CLIENTE"} EM FOCO</small><b>{context.name}</b><span>{context.type === "project" ? context.clients?.name ? `Cliente: ${context.clients.name}` : "Projeto selecionado" : `${context.projects?.length || 0} projeto(s)`}</span><Link className="focus-back-button" href="/app"><span className="focus-back-icon"><ArrowLeft size={14}/></span><span>Voltar à visão geral</span></Link></div></div>}
+      <PushNotificationControl global/>
       {children}
     </main>
   </div>;
