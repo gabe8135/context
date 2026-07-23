@@ -1,7 +1,7 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = "openai/gpt-oss-20b";
 
-export async function generateStructured({ name, instructions, input, schema }) {
+export async function generateStructured({ name, instructions, input, schema, maxCompletionTokens }) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY não configurada.");
   const response = await fetch(GROQ_URL, {
@@ -10,6 +10,7 @@ export async function generateStructured({ name, instructions, input, schema }) 
     body: JSON.stringify({
       model: MODEL,
       temperature: 0.1,
+      ...(maxCompletionTokens ? { max_completion_tokens: maxCompletionTokens } : {}),
       messages: [{ role: "system", content: instructions }, { role: "user", content: input }],
       response_format: { type: "json_schema", json_schema: { name, strict: true, schema } },
     }),
@@ -59,6 +60,7 @@ export const assistantSchema = {
   type: "object", additionalProperties: false,
   properties: {
     reply: { type: "string" },
+    proposal_action: { type: "string", enum: ["keep", "append", "replace"] },
     proposals: {
       type: "array", maxItems: 8,
       items: {
@@ -72,5 +74,5 @@ export const assistantSchema = {
       },
     },
   },
-  required: ["reply", "proposals"],
+  required: ["reply", "proposal_action", "proposals"],
 };

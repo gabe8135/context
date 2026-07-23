@@ -4,7 +4,30 @@ import { requireWorkspace } from "@/lib/auth-context";
 import { assistantSchema, generateStructured, redactSensitiveText } from "@/lib/groq-ai";
 
 export const runtime = "nodejs";
-const bodySchema = z.object({ message: z.string().trim().min(2).max(5000), project_slug: z.string().max(160).nullable().optional(), client_id: z.string().uuid().nullable().optional(), history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(3000) })).max(8).default([]) });
+
+const pendingProposalSchema = z.object({
+  id: z.string().max(160).optional(),
+  type: z.enum(["task", "note", "decision"]),
+  title: z.string().max(180),
+  content: z.string().max(4000).optional(),
+  project_id: z.string().uuid().nullable().optional(),
+  status: z.string().max(40).optional(),
+  priority: z.string().max(40).nullable().optional(),
+  due_at: z.string().max(80).nullable().optional(),
+  rationale: z.string().max(600).nullable().optional(),
+});
+
+const bodySchema = z.object({
+  message: z.string().trim().min(2).max(8000),
+  project_slug: z.string().max(160).nullable().optional(),
+  client_id: z.string().uuid().nullable().optional(),
+  history: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string().max(2500),
+  })).max(10).default([]),
+  pending_proposals: z.array(pendingProposalSchema).max(8).default([]),
+  refine_proposal_id: z.string().max(160).nullable().optional(),
+});
 
 export async function POST(request) {
   try {
@@ -13,24 +36,87 @@ export async function POST(request) {
     const scope = await resolveScope(supabase, workspaceId, values);
     if (scope.error) return NextResponse.json({ error: scope.error }, { status: 403 });
     const context = await loadContext(supabase, workspaceId, scope);
-    const history = values.history.map((item) => `${item.role === "user" ? "Usuário" : "Assistente"}: ${item.content}`).join("\n");
+    const history = values.history
+      .slice(-6)
+      .map((item) => `${item.role === "user" ? "Usuário" : "Assistente"}: ${item.content.slice(0, 800)}`)
+      .join("\n");
+    const compactContext = compactAssistantContext(context, scope.type);
+    const pendingProposals = values.pending_proposals.map((proposal) => ({
+      ...proposal,
+      content: proposal.content?.slice(0, 800),
+      rationale: proposal.rationale?.slice(0, 300),
+    }));
+    const contextPrompt = limitPromptText(JSON.stringify(compactContext), 6000);
+    const proposalsPrompt = limitPromptText(JSON.stringify(pendingProposals), 1800);
+    const historyPrompt = limitPromptText(history || "Sem mensagens anteriores.", 1800);
     const personalRule = scope.type === "general"
       ? "Na área geral, quando o pedido for pessoal ou não mencionar projeto/cliente, proponha somente task ou note com project_id null. Se o usuário nomear claramente um projeto existente, use o id dele."
       : "Neste contexto específico, toda proposta deve usar um dos project_id disponíveis e nunca deve ser pessoal.";
+    const refinementRule = values.refine_proposal_id
+      ? `O usuário acionou explicitamente a revisão da proposta ${values.refine_proposal_id}. Refaça a sugestão considerando toda a conversa e devolva proposal_action "replace". Não mantenha a versão antiga.`
+      : values.pending_proposals.length
+        ? `Existem propostas aguardando confirmação. Se o usuário pedir correção, mudança, refinamento ou demonstrar insatisfação, devolva somente a versão revisada e use proposal_action "replace". Use "append" apenas para uma nova ação independente. Para apenas responder ou explicar, use "keep" e proposals vazio.`
+        : `Não há propostas pendentes. Use proposal_action "append" quando criar sugestões e "keep" quando apenas responder.`;
     const result = await generateStructured({
       name: "squire_assistant_response", schema: assistantSchema,
-      instructions: `Você é o copiloto do Squire, um sistema de organização profissional e pessoal. Responda em português do Brasil. Use exclusivamente os dados fornecidos. O contexto ativo é ${scope.label}. ${personalRule} Nunca misture outros clientes/projetos quando houver contexto específico. Você pode ler, resumir, listar pendências, encontrar atrasos e sugerir prioridades. Quando o usuário pedir criação ou registro, devolva propostas; nunca alegue que salvou. Cada proposta precisa de confirmação humana. Extraia datas relativas usando hoje como ${new Date().toISOString().slice(0, 10)} e grave due_at em ISO ou null. Não proponha exclusão, alteração financeira ou acesso a credenciais. Decisões exigem projeto. Seja objetivo e cite títulos/datas presentes nos dados.`,
-      input: `CONTEXTO DISPONÍVEL:\n${JSON.stringify(context)}\n\nCONVERSA RECENTE:\n${history || "Sem mensagens anteriores."}\n\nSOLICITAÇÃO:\n${values.message}`,
+      maxCompletionTokens: 1200,
+      instructions: `Você é o Squire, um copiloto de operação e negócios. Sua personalidade é serena, prática, criteriosa e direta: fale como um parceiro experiente, sem frases genéricas de assistente. Responda em português do Brasil e use exclusivamente os dados fornecidos.
+
+O contexto ativo é ${scope.label}. ${personalRule} Nunca misture outros clientes ou projetos quando houver contexto específico.
+
+Você domina organização de projetos, definição de escopo, prioridades, precificação de serviços e produtos e construção de orçamentos. Ao ajudar em preços, considere escopo e entregáveis, horas estimadas, valor/hora, custos diretos e de terceiros, impostos, risco, contingência, margem, forma de pagamento e validade. Diferencie faturamento, custo, margem e lucro. Nunca invente valores ausentes: peça poucos dados essenciais ou apresente cenários claramente identificados como estimativas. Você pode redigir um orçamento completo, mas não deve tratar recomendações como aconselhamento contábil ou jurídico definitivo.
+
+Distinga com clareza fatos encontrados nos dados, cálculos, premissas e recomendações. Mostre contas de precificação de forma verificável e conclua com uma recomendação objetiva.
+
+Você pode ler, resumir, listar pendências, encontrar atrasos, sugerir prioridades e preparar propostas. Quando o usuário pedir criação ou registro, devolva propostas; nunca alegue que salvou. Cada proposta exige confirmação humana. ${refinementRule}
+
+Extraia datas relativas usando hoje como ${new Date().toISOString().slice(0, 10)} e grave due_at em ISO ou null. Não proponha exclusão, alteração financeira automática ou acesso a credenciais. Um orçamento pode ser sugerido como nota para revisão. Decisões exigem projeto. Seja objetivo e cite títulos e datas presentes nos dados.`,
+      input: `CONTEXTO DISPONÍVEL:\n${contextPrompt}\n\nPROPOSTAS AGUARDANDO CONFIRMAÇÃO:\n${proposalsPrompt}\n\nCONVERSA RECENTE:\n${historyPrompt}\n\nSOLICITAÇÃO:\n${values.message.slice(0, 2200)}`,
     });
     const allowedProjects = new Set(context.projects.map((project) => project.id));
     const proposals = (result.proposals || []).filter((proposal) => {
       if (proposal.project_id) return allowedProjects.has(proposal.project_id);
       return scope.type === "general" && ["task", "note"].includes(proposal.type);
-    }).map((proposal, index) => ({ ...proposal, id: `proposal-${index}` }));
-    return NextResponse.json({ reply: result.reply, proposals, context: scope.public });
+    }).map((proposal, index) => ({ ...proposal, id: `proposal-${Date.now()}-${index}` }));
+    return NextResponse.json({
+      reply: result.reply,
+      proposals,
+      proposal_action: result.proposal_action || (proposals.length ? "append" : "keep"),
+      context: scope.public,
+    });
   } catch (error) {
     return NextResponse.json({ error: error?.issues?.[0]?.message || error.message || "O assistente ficou indisponível." }, { status: 400 });
   }
+}
+
+function limitPromptText(value, maxChars) {
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, maxChars)}\n[trecho reduzido automaticamente para respeitar o limite da IA]`;
+}
+
+function compactAssistantContext(context, scopeType) {
+  const limits = scopeType === "general"
+    ? { projects: 10, tasks: 16, notes: 6, decisions: 5, meetings: 5, finances: 10 }
+    : { projects: 5, tasks: 20, notes: 8, decisions: 6, meetings: 6, finances: 10 };
+  const clip = (value, size = 500) => value ? String(value).slice(0, size) : value;
+  return {
+    projects: context.projects.slice(0, limits.projects).map((item) => ({
+      id: item.id, name: item.name, status: item.status, priority: item.priority,
+      progress: item.progress, due_at: item.due_at, agreed_value_cents: item.agreed_value_cents,
+      client_id: item.client_id,
+    })),
+    personal_agenda: context.personal_agenda ? {
+      tasks: context.personal_agenda.tasks.slice(0, 12),
+      notes: context.personal_agenda.notes.slice(0, 5).map((item) => ({ ...item, content: clip(item.content, 280) })),
+    } : undefined,
+    tasks: context.tasks.slice(0, limits.tasks),
+    notes: context.notes.slice(0, limits.notes).map((item) => ({ ...item, content: clip(item.content, 320) })),
+    decisions: context.decisions.slice(0, limits.decisions).map((item) => ({ ...item, content: clip(item.content, 300) })),
+    meetings: context.meetings.slice(0, limits.meetings).map((item) => ({
+      ...item, agenda: clip(item.agenda, 240), summary: clip(item.summary, 300),
+    })),
+    financial_summary: context.financial_summary.slice(0, limits.finances),
+  };
 }
 
 async function resolveScope(supabase, workspaceId, values) {

@@ -1,14 +1,14 @@
 "use client";
 
-import { Bot, Check, LoaderCircle, Send, Sparkles, Square, Trash2, User, X } from "lucide-react";
+import { Bot, Check, LoaderCircle, RefreshCw, Send, Sparkles, Square, Trash2, User, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 function initialMessage(context) {
   return {
     role: "assistant",
     content: context.type === "general"
-      ? "Estou na visão geral. Posso organizar sua agenda pessoal, consultar projetos e propor tarefas ou notas para você confirmar."
-      : `Estou no contexto de ${context.type === "project" ? "projeto" : "cliente"}: ${context.name}. Minhas respostas ficarão restritas a ele.`,
+      ? "Estou na visão geral. Posso organizar sua agenda, analisar projetos, estruturar orçamentos e propor registros para você revisar antes de salvar."
+      : `Estou focado no ${context.type === "project" ? "projeto" : "cliente"} ${context.name}. Posso analisar o trabalho, rever propostas e ajudar com escopo, preço e orçamento sem misturar dados de outros contextos.`,
   };
 }
 
@@ -20,7 +20,10 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [successMessage, setSuccessMessage] = useState(success || "");
+  const [refineProposalId, setRefineProposalId] = useState(null);
   const abortRef = useRef(null);
+  const inputRef = useRef(null);
+  const messagesRef = useRef(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -39,6 +42,15 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   }, [hydrated, messages, proposals, storageKey]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  useEffect(() => {
+    const container = messagesRef.current;
+    if (!container) return;
+    const frame = window.requestAnimationFrame(() => {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, loading]);
 
   useEffect(() => {
     if (!success) return;
@@ -76,13 +88,20 @@ export function AssistantChat({ context, projects, confirmAction, success, error
           message,
           project_slug: context.type === "project" ? context.slug : null,
           client_id: context.type === "client" ? context.id : null,
-          history: messages.slice(-8),
+          history: messages.slice(-10).map((item) => ({ ...item, content: item.content.slice(0, 2500) })),
+          pending_proposals: proposals,
+          refine_proposal_id: refineProposalId,
         }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "O assistente ficou indisponível.");
       setMessages([...next, { role: "assistant", content: result.reply }]);
-      setProposals((current) => [...current, ...(result.proposals || [])]);
+      setProposals((current) => {
+        if (result.proposal_action === "replace") return result.proposals || [];
+        if (result.proposal_action === "append") return [...current, ...(result.proposals || [])];
+        return current;
+      });
+      if (result.proposal_action === "replace") setNotice("Proposta anterior substituída pela versão refinada.");
     } catch (requestError) {
       const content = requestError.name === "AbortError"
         ? "Resposta interrompida. Nenhuma proposta desta solicitação foi criada."
@@ -90,6 +109,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
       setMessages([...next, { role: "assistant", content }]);
     } finally {
       abortRef.current = null;
+      setRefineProposalId(null);
       setLoading(false);
     }
   }
@@ -97,6 +117,13 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   function dismissProposal(id) {
     setProposals((current) => current.filter((proposal) => proposal.id !== id));
     setNotice("Proposta recusada. Nenhum dado foi alterado.");
+  }
+
+  function requestRefinement(proposal) {
+    setRefineProposalId(proposal.id);
+    setInput(`Refaça a proposta "${proposal.title}" considerando toda a nossa conversa. Quero uma versão mais precisa e útil. `);
+    setNotice("Explique o que deve mudar e envie. A nova versão substituirá a proposta atual.");
+    window.requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function discardAll() {
@@ -112,6 +139,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
     abortRef.current?.abort();
     setMessages([initialMessage(context)]);
     setProposals([]);
+    setRefineProposalId(null);
     setInput("");
     setNotice("Nova conversa iniciada.");
     sessionStorage.removeItem(storageKey);
@@ -119,6 +147,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
 
   const returnQuery = context.type === "project" ? `?projeto=${encodeURIComponent(context.slug)}` : context.type === "client" ? `?cliente=${encodeURIComponent(context.id)}` : "";
   const names = useMemo(() => new Map([[null, "Pessoal"], ...projects.map((project) => [project.id, project.name])]), [projects]);
+  const typeNames = { task: "Tarefa", note: "Nota", decision: "Decisão" };
 
   return <div className="assistant-layout">
     <section className="panel assistant-chat-panel">
@@ -127,11 +156,11 @@ export function AssistantChat({ context, projects, confirmAction, success, error
         <div className="assistant-head-actions"><span className="badge assistant-context-badge" title={context.name}>{context.name}</span><button type="button" className="btn compact assistant-new-conversation" onClick={clearConversation} title="Limpar mensagens e iniciar outra conversa" aria-label="Nova conversa"><Trash2 size={14}/><span>Nova conversa</span></button></div>
       </header>
       {successMessage && <p className="success-note temporary-notice" role="status">{successMessage}</p>}{error && <p className="error" role="alert">{error}</p>}{notice && <p className="assistant-notice temporary-notice" role="status">{notice}</p>}
-      <div className="assistant-messages" aria-live="polite">{messages.map((message, index) => <div className={`assistant-message ${message.role}`} key={`${message.role}-${index}`}><span>{message.role === "assistant" ? <Sparkles size={15}/> : <User size={15}/>}</span><p>{message.content}</p></div>)}{loading && <div className="assistant-message assistant"><span><LoaderCircle className="spin" size={15}/></span><p>Lendo o contexto e preparando a resposta…</p></div>}</div>
+      <div ref={messagesRef} className="assistant-messages" aria-live="polite">{messages.map((message, index) => <div className={`assistant-message ${message.role}`} key={`${message.role}-${index}`}><span>{message.role === "assistant" ? <Sparkles size={15}/> : <User size={15}/>}</span><p>{message.content}</p></div>)}{loading && <div className="assistant-message assistant"><span><LoaderCircle className="spin" size={15}/></span><p>Lendo o contexto e preparando a resposta…</p></div>}</div>
       <form className="assistant-composer" onSubmit={send}>
         <div className="assistant-input-shell">
           <div className="assistant-input-label"><Sparkles size={14}/><span>Converse com o Squire</span></div>
-          <textarea rows="3" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Peça um resumo, tire uma dúvida ou solicite uma proposta…" aria-label="Mensagem para o Assistente Squire"/>
+          <textarea ref={inputRef} rows="3" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Peça um resumo, refine uma proposta ou monte um orçamento…" aria-label="Mensagem para o Assistente Squire"/>
           <div className="assistant-input-footer"><span>Enter envia · Shift + Enter quebra a linha</span>{loading ? <button type="button" className="assistant-send stop" onClick={() => abortRef.current?.abort()}><Square size={14}/><span>Interromper</span></button> : <button className="assistant-send" disabled={!input.trim()}><Send size={16}/><span>Enviar</span></button>}</div>
         </div>
       </form>
@@ -139,7 +168,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
     </section>
     <aside className="assistant-proposals">
       <div className="proposal-section-head"><div><div className="eyebrow">Propostas para confirmar</div><small>{proposals.length ? `${proposals.length} pendente(s)` : "Nenhuma pendência"}</small></div>{proposals.length > 1 && <button type="button" className="btn compact" onClick={discardAll}><X size={14}/> Descartar todas</button>}</div>
-      {proposals.length ? proposals.map((proposal) => <article className="panel proposal-card" key={proposal.id}><div className="proposal-head"><span className="badge">{proposal.type}</span><small>{names.get(proposal.project_id) || "Projeto"}</small></div><h3>{proposal.title}</h3><p>{proposal.content}</p><div className="meta">{proposal.rationale}</div><div className="proposal-actions"><form action={confirmAction.bind(null, returnQuery)} onSubmit={() => setProposals((current) => current.filter((item) => item.id !== proposal.id))}><input type="hidden" name="proposal" value={JSON.stringify(proposal)}/><button className="btn primary"><Check size={14}/> Confirmar e salvar</button></form><button type="button" className="btn" onClick={() => dismissProposal(proposal.id)}><X size={14}/> Recusar</button></div></article>) : <div className="empty-state compact"><Bot size={25}/><p>As ações sugeridas aparecerão aqui. Nada é salvo automaticamente.</p></div>}
+      {proposals.length ? proposals.map((proposal) => <article className="panel proposal-card" key={proposal.id}><div className="proposal-head"><span className="badge">{typeNames[proposal.type] || proposal.type}</span><small>{names.get(proposal.project_id) || "Projeto"}</small></div><h3>{proposal.title}</h3><p>{proposal.content}</p><div className="meta">{proposal.rationale}</div><div className="proposal-actions"><form action={confirmAction.bind(null, returnQuery)} onSubmit={() => setProposals((current) => current.filter((item) => item.id !== proposal.id))}><input type="hidden" name="proposal" value={JSON.stringify(proposal)}/><button className="btn primary"><Check size={14}/> Confirmar e salvar</button></form><button type="button" className="btn" onClick={() => requestRefinement(proposal)}><RefreshCw size={14}/> Refinar</button><button type="button" className="btn" onClick={() => dismissProposal(proposal.id)}><X size={14}/> Recusar</button></div></article>) : <div className="empty-state compact"><Bot size={25}/><p>As ações sugeridas aparecerão aqui. Nada é salvo automaticamente.</p></div>}
     </aside>
   </div>;
 }
