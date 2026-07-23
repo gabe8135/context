@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FolderKanban, Mail, MessageCircle, Pencil, Phone, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { StatusBadge } from "@/components/status-badge";
 
 export function ClientsListClient({ clients }) {
   const [selected, setSelected] = useState(null);
@@ -15,7 +16,7 @@ export function ClientsListClient({ clients }) {
           <td data-label="Cliente"><button className="client-preview-trigger" type="button" onClick={() => setSelected(client)}><b>{client.name}</b><span>{client.projectCount} {client.projectCount === 1 ? "projeto" : "projetos"}</span></button></td>
           <td data-label="Contato">{client.email || client.whatsapp || "—"}</td>
           <td data-label="Projetos" className="mono">{client.projectCount}</td>
-          <td data-label="Status"><span className="badge">{client.status === "active" ? "Ativo" : "Inativo"}</span></td>
+          <td data-label="Status"><StatusBadge status={client.status}/></td>
           <td data-label="Ações"><button className="btn" type="button" onClick={() => setSelected(client)}>Visualizar</button></td>
         </tr>)}</tbody>
       </table>

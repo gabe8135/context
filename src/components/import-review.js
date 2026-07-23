@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { parseUnstructuredText } from "@/lib/import-parser";
+import { StatusBadge } from "@/components/status-badge";
 
 const labels = { task: "Tarefa", note: "Nota", decision: "Decisão", procedure: "Procedimento", income: "Receita", expense: "Despesa", domain: "Domínio" };
 const DRAFT = "squire:organizar:draft";
@@ -38,7 +39,7 @@ export function ImportReview({ projects, action, initialProjectId = "" }) {
       <div className="panel-head"><div><div className="panel-title">Revisar propostas</div><div className="meta">A IA não salvou nada. Ajuste, desmarque ou confirme os itens abaixo.</div></div><span className="badge">{items.filter((item) => item.selected).length}/{items.length}</span></div>
       <label className="field"><span>Destino</span><select name="project_id" value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">Agenda pessoal · sem projeto</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name} · {project.clients?.name}</option>)}</select></label>
       <input type="hidden" name="items" value={JSON.stringify(items.filter((item) => item.selected))}/>
-      {items.map((item) => <div className="import-row" key={item.id}><input type="checkbox" checked={item.selected} onChange={(event) => update(item.id, { selected: event.target.checked })}/><select value={item.type} onChange={(event) => update(item.id, { type: event.target.value })}>{Object.entries(labels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><div className="import-content"><input aria-label="Título do item" value={item.title || ""} onChange={(event) => update(item.id, { title: event.target.value })}/><textarea aria-label="Detalhes do item" rows="4" value={item.content} onChange={(event) => update(item.id, { content: event.target.value })}/>{item.rationale && <small className="meta">Por que foi classificado assim: {item.rationale}</small>}</div><span className="badge">{item.status}</span></div>)}
+      {items.map((item) => <div className="import-row" key={item.id}><input type="checkbox" checked={item.selected} onChange={(event) => update(item.id, { selected: event.target.checked })}/><select value={item.type} onChange={(event) => update(item.id, { type: event.target.value })}>{Object.entries(labels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><div className="import-content"><input aria-label="Título do item" value={item.title || ""} onChange={(event) => update(item.id, { title: event.target.value })}/><textarea aria-label="Detalhes do item" rows="4" value={item.content} onChange={(event) => update(item.id, { content: event.target.value })}/>{item.rationale && <small className="meta">Por que foi classificado assim: {item.rationale}</small>}</div><StatusBadge status={item.status}/></div>)}
       <div className="form-actions"><button className="btn primary">Confirmar importação</button></div>
     </form>}
   </div>;
