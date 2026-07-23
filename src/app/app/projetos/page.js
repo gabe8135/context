@@ -26,9 +26,30 @@ export default async function Projects({ searchParams }) {
     ...project,
     progress: calculateProjectProgress(tasksByProject[project.id] || [], project.status),
   }));
+
   return <AppShell><div className="content projects-list-page">
-    <div className="project-head"><div><div className="eyebrow">Operação</div><h1 className="page-title">Projetos</h1><p className="subtitle">Trabalho ativo, contexto e próximos passos por cliente.</p></div><Link className="btn primary" href="/app/projetos/novo"><Plus size={15}/> Novo projeto</Link></div>
+    <div className="project-head">
+      <div><div className="eyebrow">Operação</div><h1 className="page-title">Projetos</h1><p className="subtitle">Trabalho ativo, contexto e próximos passos por cliente.</p></div>
+      <Link className="btn primary" href="/app/projetos/novo"><Plus size={15}/> Novo projeto</Link>
+    </div>
     {query.sucesso && <p className="success-note">{query.sucesso}</p>}
-    {!projects.length ? <section className="empty-state"><FolderKanban size={34}/><h2>Nenhum projeto ativo</h2><p>Crie um projeto novo ou consulte os projetos arquivados.</p><div className="actions"><Link className="btn primary" href="/app/projetos/novo">Criar projeto</Link><Link className="btn" href="/app/arquivados">Ver arquivados</Link></div></section> : <section className="panel data-panel"><table><thead><tr><th>Projeto</th><th>Cliente</th><th>Progresso</th><th>Prazo</th><th>Ações</th></tr></thead><tbody>{projects.map((project) => <tr key={project.id}><td><b>{project.name}</b><div className="meta">{project.status} · {project.priority}</div></td><td>{project.clients?.name}</td><td><div className="progress" style={{ width: 110 }}><i style={{ width: `${project.progress}%` }}/></div><div className="meta">{project.progress}%</div></td><td>{project.due_at ? new Date(`${project.due_at}T12:00:00`).toLocaleDateString("pt-BR") : "—"}</td><td><div className="table-actions"><Link className="btn" href={`/app/projetos/${project.slug}`}>Abrir</Link><form action={archiveProjectAction.bind(null, project.id)}><ConfirmSubmitButton message={`Arquivar o projeto “${project.name}”? Os dados serão preservados.`}><Archive size={13}/> Arquivar</ConfirmSubmitButton></form></div></td></tr>)}</tbody></table></section>}
+    {!projects.length
+      ? <section className="empty-state"><FolderKanban size={34}/><h2>Nenhum projeto ativo</h2><p>Crie um projeto novo ou consulte os projetos arquivados.</p><div className="actions"><Link className="btn primary" href="/app/projetos/novo">Criar projeto</Link><Link className="btn" href="/app/arquivados">Ver arquivados</Link></div></section>
+      : <section className="panel data-panel projects-compact-list"><table>
+        <thead><tr><th>Projeto</th><th>Cliente</th><th>Progresso</th><th>Prazo</th><th>Ações</th></tr></thead>
+        <tbody>{projects.map((project) => <tr key={project.id}>
+          <td data-label="Projeto"><b>{project.name}</b><div className="meta project-status-line">{project.status} · {project.priority}</div></td>
+          <td data-label="Cliente">{project.clients?.name}</td>
+          <td data-label="Progresso">
+            <div className="desktop-project-progress"><div className="progress" style={{ width: 110 }}><i style={{ width: `${project.progress}%` }}/></div><div className="meta">{project.progress}%</div></div>
+            <div className="mobile-progress-ring" style={{ "--progress": `${project.progress * 3.6}deg` }}><span>{project.progress}%</span></div>
+          </td>
+          <td data-label="Prazo">{project.due_at ? new Date(`${project.due_at}T12:00:00`).toLocaleDateString("pt-BR") : "Sem prazo"}</td>
+          <td data-label="Ações"><div className="table-actions">
+            <Link className="btn" href={`/app/projetos/${project.slug}`}>Abrir</Link>
+            <form action={archiveProjectAction.bind(null, project.id)}><ConfirmSubmitButton message={`Arquivar o projeto “${project.name}”? Os dados serão preservados.`}><Archive size={13}/> Arquivar</ConfirmSubmitButton></form>
+          </div></td>
+        </tr>)}</tbody>
+      </table></section>}
   </div></AppShell>;
 }

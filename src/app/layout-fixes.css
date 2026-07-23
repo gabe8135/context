@@ -35,7 +35,7 @@
   .topbar{height:60px;padding:0 12px}
   .mobile-menu-button{padding:8px}
   .mobile-menu-button span{display:none}
-  .btn:has(>svg){width:40px;height:40px;padding:0;gap:0;font-size:0;border-radius:10px}
+  .btn:has(>svg){width:auto;height:auto;min-height:40px;padding:9px 12px;gap:7px;font-size:13px;border-radius:10px}
   .btn:has(>svg)>svg{width:18px;height:18px}
   .top-actions>.btn{display:none}
   .search{min-width:0;padding:8px 10px}
@@ -52,7 +52,7 @@
   .panel>.item{align-items:stretch;flex-direction:column}
   .panel>.item>.actions{width:100%}
   .panel>.item>.actions .btn{flex:1;text-align:center}
-  .btn:has(>svg){width:40px!important;flex:0 0 40px!important}
+  .btn:has(>svg){width:auto!important;flex:0 0 auto!important}
 }
 
 @media(max-width:700px){
@@ -93,6 +93,48 @@
   .clients-list-page .data-panel tr,
   .tasks-list-page .data-panel tr,
   .notes-list-page .data-panel tr{padding:12px 14px}
+
+  /* No celular, registros recorrentes funcionam como linhas compactas. */
+  .clients-list-page .clients-compact-list tr{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 11px;border-radius:12px}
+  .clients-list-page .clients-compact-list,
+  .clients-list-page .clients-compact-list table,
+  .clients-list-page .clients-compact-list tbody{background:transparent}
+  .clients-list-page .clients-compact-list tr{background:var(--surface);box-shadow:none}
+  .clients-list-page .clients-compact-list td{padding:3px 0}
+  .clients-list-page .clients-compact-list td[data-label="Contato"],
+  .clients-list-page .clients-compact-list td[data-label="Projetos"],
+  .clients-list-page .clients-compact-list td[data-label="Status"]{display:none}
+  .clients-list-page .clients-compact-list td[data-label="Cliente"]{grid-column:1}
+  .clients-list-page .clients-compact-list td[data-label="Ações"]{grid-column:2}
+  .clients-list-page .clients-compact-list td::before{display:none}
+  .clients-list-page .clients-compact-list .btn{min-height:36px;padding:7px 10px}
+
+  .projects-list-page .data-panel tr,
+  .tasks-list-page .data-panel tr,
+  .notes-list-page .data-panel tr{gap:4px 10px;padding:10px 12px}
+  .projects-list-page .data-panel td,
+  .tasks-list-page .data-panel td,
+  .notes-list-page .data-panel td{padding:5px 0}
+
+  .projects-list-page .projects-compact-list,
+  .projects-list-page .projects-compact-list table,
+  .projects-list-page .projects-compact-list tbody{background:transparent}
+  .projects-list-page .projects-compact-list tr{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"project progress action" "client progress action" "deadline progress action";align-items:center;gap:2px 10px;padding:10px 11px;background:var(--surface);box-shadow:none}
+  .projects-list-page .projects-compact-list td{padding:2px 0}
+  .projects-list-page .projects-compact-list td::before{display:none}
+  .projects-list-page .projects-compact-list td[data-label="Projeto"]{grid-area:project}
+  .projects-list-page .projects-compact-list td[data-label="Cliente"]{grid-area:client;color:var(--muted);font-size:12px}
+  .projects-list-page .projects-compact-list td[data-label="Cliente"]::before{content:"Cliente: ";display:inline;color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0}
+  .projects-list-page .projects-compact-list td[data-label="Progresso"]{display:block;grid-area:progress}
+  .projects-list-page .projects-compact-list td[data-label="Prazo"]{display:block;grid-area:deadline;color:var(--muted);font-size:11px}
+  .projects-list-page .projects-compact-list td[data-label="Prazo"]::before{content:"Prazo: ";display:inline;color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0}
+  .projects-list-page .projects-compact-list td[data-label="Ações"]{grid-area:action}
+  .projects-list-page .projects-compact-list td[data-label="Ações"]::before{display:none}
+  .projects-list-page .projects-compact-list .project-status-line{display:block;font-size:10px}
+  .projects-list-page .projects-compact-list .desktop-project-progress{display:none}
+  .projects-list-page .projects-compact-list .mobile-progress-ring{display:grid}
+  .projects-list-page .projects-compact-list .table-actions{display:grid;gap:5px}
+  .projects-list-page .projects-compact-list .table-actions .btn{min-height:34px;padding:7px 9px}
 }
 
 @media(max-width:480px){

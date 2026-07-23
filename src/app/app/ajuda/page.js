@@ -1,5 +1,6 @@
 import {
   Archive,
+  Bell,
   Bot,
   BrainCircuit,
   CalendarDays,
@@ -8,6 +9,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   FileText,
+  Eye,
   FolderKanban,
   KeyRound,
   Lightbulb,
@@ -16,6 +18,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Smartphone,
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -37,10 +40,37 @@ const modules = [
     title: "Rotina de trabalho",
     description: "Um fluxo simples para manter o Squire confiável todos os dias.",
     items: [
-      ["Entrada", "Veja tarefas atrasadas, cobranças e próximos compromissos."],
-      ["Agenda", "Consulte o calendário mensal; dias destacados possuem tarefas ou reuniões."],
+      ["Início", "Veja afazeres pessoais, atrasos relevantes e projetos recentes sem excesso de métricas."],
+      ["Agenda", "Consulte tarefas, reuniões e eventos; clique em um item para visualizar antes de editar."],
       ["Projetos", "Entre no projeto para trabalhar apenas com informações daquele contexto."],
       ["Encerramento", "Conclua tarefas, atualize pagamentos e registre decisões importantes."],
+    ],
+  },
+  {
+    id: "agenda",
+    icon: CalendarDays,
+    title: "Agenda, compromissos e notificações",
+    description: "Tarefas, reuniões e eventos com data aparecem juntos no calendário.",
+    items: [
+      ["Calendário mensal", "Dias destacados possuem compromissos. O número no canto informa quantos itens existem naquele dia."],
+      ["Ver detalhes", "Clique em um compromisso para abrir seus detalhes. A edição só começa quando você escolhe o botão Editar."],
+      ["Agenda geral", "Mostra compromissos pessoais e de todos os projetos aos quais você tem acesso."],
+      ["Agenda do projeto", "Quando um projeto está em foco, exibe somente compromissos relacionados a ele."],
+      ["Notificar antes", "Ao criar ou editar um evento ou reunião, escolha quando deseja ser avisado."],
+      ["Permissão", "As notificações dependem da permissão do navegador e podem precisar ser liberadas nas configurações do site."],
+    ],
+  },
+  {
+    id: "visualizacao",
+    icon: Eye,
+    title: "Visualizar antes de editar",
+    description: "As listagens priorizam consulta rápida e evitam alterações acidentais.",
+    items: [
+      ["Clientes", "Clique em Visualizar para abrir contatos, observações e projetos em um modal."],
+      ["Compromissos", "O clique abre os detalhes; use Editar somente quando realmente quiser alterar o registro."],
+      ["Tarefas e notas", "Na página do projeto, o primeiro clique abre a visualização completa em modal."],
+      ["Fechar modal", "Use o botão Fechar, a tecla Esc ou clique fora da janela."],
+      ["Abrir tudo", "Use os links de seção quando precisar navegar pela listagem completa daquele tipo."],
     ],
   },
   {
@@ -132,8 +162,8 @@ const recordChoices = [
 const areas = [
   ["Visão geral", "Painel inicial com um resumo de todo o seu workspace.", "Começar o dia e entender rapidamente projetos, tarefas, valores e atividades recentes."],
   ["Entrada", "Centraliza tudo que pede atenção agora ou em breve.", "Ver tarefas abertas, atrasos, cobranças vencidas e compromissos próximos."],
-  ["Agenda", "Calendário mensal de tarefas e reuniões com data marcada.", "Planejar a semana e descobrir quais dias estão mais ocupados."],
-  ["Clientes", "Cadastro da pessoa ou empresa que contrata seus serviços.", "Guardar contato, origem, projetos relacionados e histórico do relacionamento."],
+  ["Agenda", "Calendário mensal de tarefas, reuniões e eventos com data marcada, detalhes e lembretes.", "Planejar a semana, consultar compromissos e escolher quando receber uma notificação."],
+  ["Clientes", "Cadastro da pessoa ou empresa que contrata seus serviços. A listagem abre uma visualização com contatos e projetos.", "Guardar contato, origem, projetos relacionados e histórico do relacionamento antes de entrar na pasta completa."],
   ["Projetos", "É o trabalho principal realizado para um cliente. Reúne todas as informações relacionadas.", "Separar serviços, contratos ou iniciativas. Exemplo: “Site da Empresa X”."],
   ["Tarefas", "Ações práticas que precisam ser feitas. Tarefas concluídas calculam o progresso do projeto.", "Registrar um próximo passo com responsável, prioridade e prazo."],
   ["Financeiro", "Controla previsões, receitas pagas, pagamentos parciais, despesas e descontos.", "Saber o que recebeu, o que ainda falta receber e o resultado real do projeto."],
@@ -151,6 +181,8 @@ const areas = [
   ["Arquivos", "Armazenamento privado com download e controle de versões pelo mesmo nome lógico.", "Guardar contratos, imagens, backups e documentos ligados ao projeto."],
   ["Modelos", "Estruturas prontas que geram projetos com tarefas e organização inicial.", "Criar projetos semelhantes com rapidez e um padrão de qualidade consistente."],
   ["Configurações", "Preferências do workspace, alertas e informações da conta.", "Ajustar funcionamento do Squire e escolher quando o sistema deve chamar sua atenção."],
+  ["Notificações", "Avisos do navegador para eventos, reuniões e tarefas com lembrete configurado.", "Receber alertas no computador, tablet ou celular depois de permitir notificações para o Squire."],
+  ["Visualização por modal", "Uma janela de consulta que mostra os detalhes sem levar você imediatamente para a edição.", "Consultar clientes, tarefas, notas e compromissos antes de decidir editar."],
 ];
 
 export default async function HelpPage() {
@@ -171,6 +203,7 @@ export default async function HelpPage() {
         <nav className="manual-toc" aria-label="Atalhos do manual">
           <a href="#comecar"><Sparkles size={16} /> Começar</a>
           <a href="#contextos"><Network size={16} /> Contextos</a>
+          <a href="#agenda"><Bell size={16} /> Agenda e avisos</a>
           <a href="#financeiro"><CircleDollarSign size={16} /> Financeiro</a>
           <a href="#memoria"><FileText size={16} /> Memória</a>
           <a href="#ia"><Bot size={16} /> Inteligência artificial</a>
@@ -195,8 +228,8 @@ export default async function HelpPage() {
         </section>
 
         <aside className="manual-tip">
-          <CalendarDays size={22} aria-hidden="true" />
-          <div><strong>Rotina recomendada</strong><p>Abra a Entrada no começo do dia, trabalhe dentro do projeto em foco e encerre atualizando tarefas, decisões e pagamentos.</p></div>
+          <Smartphone size={22} aria-hidden="true" />
+          <div><strong>Rotina recomendada</strong><p>Comece pela página Início, marque os afazeres rápidos, consulte a Agenda e entre em um projeto somente quando precisar daquele contexto. No celular, as listagens ficam compactas, mas os detalhes continuam disponíveis ao tocar em cada item.</p></div>
         </aside>
 
         <section className="manual-chooser" aria-labelledby="chooser-title">
