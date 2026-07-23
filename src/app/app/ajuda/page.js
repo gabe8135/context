@@ -68,7 +68,7 @@ const modules = [
     items: [
       ["Clientes", "Clique em Visualizar para abrir contatos, observações e projetos em um modal."],
       ["Compromissos", "O clique abre os detalhes; use Editar somente quando realmente quiser alterar o registro."],
-      ["Tarefas e notas", "Na página do projeto, o primeiro clique abre a visualização completa em modal."],
+      ["Tarefas e notas", "Na página do projeto, o primeiro clique abre a visualização completa em modal. Use as setas da fila para colocar o próximo passo mais importante no topo, mesmo sem prazo."],
       ["Fechar modal", "Use o botão Fechar, a tecla Esc ou clique fora da janela."],
       ["Abrir tudo", "Use os links de seção quando precisar navegar pela listagem completa daquele tipo."],
     ],
@@ -165,7 +165,7 @@ const areas = [
   ["Agenda", "Calendário mensal de tarefas, reuniões e eventos com data marcada, detalhes e lembretes.", "Planejar a semana, consultar compromissos e escolher quando receber uma notificação."],
   ["Clientes", "Cadastro da pessoa ou empresa que contrata seus serviços. A listagem abre uma visualização com contatos e projetos.", "Guardar contato, origem, projetos relacionados e histórico do relacionamento antes de entrar na pasta completa."],
   ["Projetos", "É o trabalho principal realizado para um cliente. Reúne todas as informações relacionadas.", "Separar serviços, contratos ou iniciativas. Exemplo: “Site da Empresa X”."],
-  ["Tarefas", "Ações práticas que precisam ser feitas. Tarefas concluídas calculam o progresso do projeto.", "Registrar um próximo passo com responsável, prioridade e prazo."],
+  ["Tarefas", "Ações práticas que precisam ser feitas. Tarefas concluídas calculam o progresso do projeto e a fila manual define a ordem de execução.", "Registrar um próximo passo e colocá-lo na posição certa da fila, mesmo quando ainda não houver prazo."],
   ["Financeiro", "Controla previsões, receitas pagas, pagamentos parciais, despesas e descontos.", "Saber o que recebeu, o que ainda falta receber e o resultado real do projeto."],
   ["Decisões", "Preserva escolhas importantes e o motivo delas.", "Evitar rediscutir assuntos já definidos e registrar quando uma decisão substitui outra."],
   ["Reuniões", "Registra data, participantes, pauta, notas e resumo de uma conversa.", "Preparar encontros e guardar o que foi discutido com cliente ou equipe."],

@@ -10,6 +10,56 @@
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;flex-shrink:0;max-width:100%;line-height:1.2}
 .btn>svg{flex:0 0 auto}
 .table-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.task-list-drag-handle{display:grid;place-items:center;width:34px;height:38px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--raised);color:var(--muted);cursor:grab;touch-action:none;user-select:none}
+.task-list-drag-handle:hover{border-color:var(--brand);color:var(--brand)}
+.task-list-drag-handle:active{cursor:grabbing}
+.task-list-row.is-dragging{position:relative;z-index:3;border-color:var(--brand);background:var(--raised);box-shadow:0 10px 24px color-mix(in srgb,var(--brand) 18%,transparent);opacity:.94}
+.task-details-trigger{
+  appearance:none;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--ink);
+  font:inherit;
+  line-height:1.35;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:none
+}
+.task-details-trigger:hover b{color:var(--brand)}
+.task-details-trigger b{display:block;max-width:100%;color:var(--ink);font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.task-details-trigger .meta{display:block;margin:0;color:var(--muted);font-size:12px;font-weight:500;line-height:1.3}
+.task-status{border:1px solid transparent;font-weight:800}
+.task-status-select{max-width:138px;padding:5px 24px 5px 8px;font:inherit;font-size:11px;line-height:1.2;cursor:pointer}
+.task-status-select:focus-visible{outline:2px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:2px}
+.task-status.status-todo{color:#64748b;background:color-mix(in srgb,#64748b 14%,var(--surface));border-color:color-mix(in srgb,#64748b 30%,var(--line))}
+.task-status.status-in_progress,.task-status.status-doing{color:var(--brand);background:color-mix(in srgb,#3b82f6 14%,var(--surface));border-color:color-mix(in srgb,#3b82f6 32%,var(--line))}
+.task-status.status-waiting_client,.task-status.status-waiting_third_party{color:var(--warning);background:color-mix(in srgb,#f59e0b 16%,var(--surface));border-color:color-mix(in srgb,#f59e0b 34%,var(--line))}
+.task-status.status-blocked{color:var(--danger);background:color-mix(in srgb,#ef4444 13%,var(--surface));border-color:color-mix(in srgb,#ef4444 32%,var(--line))}
+.task-status.status-review{color:color-mix(in srgb,#8b5cf6 72%,var(--ink));background:color-mix(in srgb,#8b5cf6 14%,var(--surface));border-color:color-mix(in srgb,#8b5cf6 32%,var(--line))}
+.task-status.status-completed{color:var(--success);background:color-mix(in srgb,#22c55e 14%,var(--surface));border-color:color-mix(in srgb,#22c55e 32%,var(--line))}
+.task-status.status-cancelled,.task-status.status-archived{color:var(--muted);background:var(--raised);border-color:var(--line)}
+.task-list-row[data-status="in_progress"],.task-list-row[data-status="doing"]{border-left:3px solid #3b82f6!important}
+.task-list-row[data-status="waiting_client"],.task-list-row[data-status="waiting_third_party"]{border-left:3px solid #f59e0b!important}
+.task-list-row[data-status="blocked"]{border-left:3px solid #ef4444!important}
+.task-list-row[data-status="review"]{border-left:3px solid #8b5cf6!important}
+.task-list-row[data-status="completed"]{border-left:3px solid #22c55e!important}
+.task-list-row[data-status="completed"] .task-details-trigger b{text-decoration:line-through;color:var(--muted)}
+.completed-tasks-divider td{padding:14px!important;background:var(--canvas)}
+.completed-tasks-divider button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border:1px dashed var(--line);border-radius:11px;background:var(--surface);color:var(--ink);cursor:pointer;text-align:left}
+.completed-tasks-divider button:hover{border-color:var(--success)}
+.completed-tasks-divider button>svg:first-child{color:var(--success)}
+.completed-tasks-divider button span{font-weight:800}
+.completed-tasks-divider button small{margin-left:auto;color:var(--muted)}
+.completed-tasks-divider button .is-open{transform:rotate(180deg)}
 .mobile-menu-button,.sidebar-backdrop{display:none}
 
 @media(max-width:900px){
@@ -115,6 +165,80 @@
   .projects-list-page .data-panel td,
   .tasks-list-page .data-panel td,
   .notes-list-page .data-panel td{padding:5px 0}
+
+  /* Tarefas: uma linha compacta abre os detalhes; edição fica como ação explícita. */
+  .tasks-list-page .tasks-compact-list,
+  .tasks-list-page .tasks-compact-list table,
+  .tasks-list-page .tasks-compact-list tbody{background:transparent}
+  .tasks-list-page .tasks-compact-list tbody{gap:7px}
+  .tasks-list-page .tasks-compact-list .task-list-row{
+    position:relative;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;
+    gap:4px 10px;
+    min-height:66px;
+    padding:9px 10px;
+    border-radius:12px;
+    cursor:pointer
+  }
+  .tasks-list-page .tasks-compact-list .task-list-row:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .tasks-list-page .tasks-compact-list .task-list-row td{padding:0}
+  .tasks-list-page .tasks-compact-list .task-list-row td::before{display:none}
+  .tasks-list-page .tasks-compact-list .task-queue-column{grid-column:1;grid-row:1/3}
+  .tasks-list-page .tasks-compact-list .task-title-column{grid-column:2;grid-row:1}
+  .tasks-list-page .tasks-compact-list .task-context-column{grid-column:2;grid-row:2;color:var(--muted);font-size:12px}
+  .tasks-list-page .tasks-compact-list .task-status-column{grid-column:3;grid-row:1}
+  .tasks-list-page .tasks-compact-list .task-date-column{grid-column:2;grid-row:3;color:var(--muted);font-size:12px}
+  .tasks-list-page .tasks-compact-list .task-actions-column{grid-column:3;grid-row:2/4}
+  .tasks-list-page .tasks-compact-list .task-details-trigger{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    width:100%;
+    padding:0;
+    color:inherit;
+    text-align:left;
+    background:transparent;
+    border:0;
+    cursor:pointer
+  }
+  .tasks-list-page .tasks-compact-list .task-details-trigger b{font-size:14px;line-height:1.25}
+  .tasks-list-page .tasks-compact-list .task-details-trigger .meta{font-size:11px}
+  .tasks-list-page .tasks-compact-list .queue-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .tasks-list-page .tasks-compact-list .task-list-drag-handle{
+    display:grid;
+    place-items:center;
+    width:32px;
+    height:38px;
+    padding:0;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:var(--raised);
+    color:var(--muted);
+    cursor:grab;
+    touch-action:none;
+    user-select:none
+  }
+  .tasks-list-page .tasks-compact-list .task-list-drag-handle:active{cursor:grabbing}
+  .tasks-list-page .tasks-compact-list .task-list-row.is-dragging{
+    z-index:3;
+    border-color:var(--brand);
+    background:var(--raised);
+    box-shadow:0 10px 24px color-mix(in srgb,var(--brand) 18%,transparent);
+    opacity:.94
+  }
+  .tasks-list-page .tasks-compact-list .completed-tasks-divider{display:block;padding:0;background:transparent;border:0;box-shadow:none}
+  .tasks-list-page .tasks-compact-list .completed-tasks-divider td{display:block;padding:3px 0!important}
+  .tasks-list-page .tasks-compact-list .completed-tasks-divider button{min-height:46px}
+  .tasks-list-page .tasks-compact-list .completed-tasks-divider button small{display:none}
+  .tasks-list-page .tasks-compact-list .task-actions-column .btn{width:34px!important;height:34px;min-height:34px;padding:0}
+  .tasks-list-page .tasks-compact-list .task-actions-column .btn span{display:none}
+  .tasks-list-page .tasks-compact-list .badge{padding:4px 7px;font-size:10px}
+  .tasks-list-page.scoped-list-page .tasks-compact-list .task-context-column{display:none}
+  .tasks-list-page.scoped-list-page .tasks-compact-list .task-date-column{grid-row:2}
+  .tasks-list-page.scoped-list-page .tasks-compact-list .task-actions-column{grid-row:2}
 
   .projects-list-page .projects-compact-list,
   .projects-list-page .projects-compact-list table,

@@ -23,14 +23,59 @@ async function findProject(supabase, workspaceId, projectId) {
   return data;
 }
 
+async function openQueue(supabase, workspaceId, projectId) {
+  let query = supabase.from("tasks")
+    .select("id,project_id")
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null)
+    .not("status", "in", "(completed,cancelled,archived)")
+    .order("queue_position", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+  query = projectId ? query.eq("project_id", projectId) : query.is("project_id", null);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+async function persistQueue(supabase, workspaceId, items) {
+  const updates = await Promise.all(items.map((item, index) =>
+    supabase.from("tasks").update({ queue_position: (index + 1) * 1000 }).eq("id", item.id).eq("workspace_id", workspaceId)
+  ));
+  const error = updates.find((result) => result.error)?.error;
+  if (error) throw error;
+}
+
+async function placeCreatedTask(supabase, workspaceId, taskId, projectId, placement) {
+  if (!placement || placement === "end") return;
+  const items = await openQueue(supabase, workspaceId, projectId);
+  const currentIndex = items.findIndex((item) => item.id === taskId);
+  if (currentIndex < 0) return;
+  const [created] = items.splice(currentIndex, 1);
+  let targetIndex = 0;
+  if (placement !== "top") {
+    const [relation, anchorId] = placement.split(":");
+    const anchorIndex = items.findIndex((item) => item.id === anchorId);
+    if (anchorIndex < 0 || !["before", "after"].includes(relation)) return;
+    targetIndex = anchorIndex + (relation === "after" ? 1 : 0);
+  }
+  items.splice(targetIndex, 0, created);
+  await persistQueue(supabase, workspaceId, items);
+}
+
 export async function createTaskAction(formData) {
   const { supabase, user, workspaceId } = await requireWorkspace();
   let value;
   try { value = taskPayload(formData); } catch (error) { fail(`/app/tarefas/nova?projeto=${formData.get("project_slug") || ""}`, error); }
   let project;
   try { project = await findProject(supabase, workspaceId, value.project_id); } catch (error) { fail("/app/tarefas/nova", error); }
-  const { error } = await supabase.from("tasks").insert({ ...value, workspace_id: workspaceId, client_id: project?.client_id || null, created_by: user.id });
+  const { data: createdTask, error } = await supabase.from("tasks").insert({ ...value, workspace_id: workspaceId, client_id: project?.client_id || null, created_by: user.id }).select("id").single();
   if (error) fail(`/app/tarefas/nova${project ? `?projeto=${project.slug}` : ""}`, error);
+  try {
+    if (value.status !== "completed") await placeCreatedTask(supabase, workspaceId, createdTask.id, project?.id || null, String(formData.get("queue_placement") || "end"));
+  } catch (placementError) {
+    await supabase.from("tasks").delete().eq("id", createdTask.id).eq("workspace_id", workspaceId);
+    fail(`/app/tarefas/nova${project ? `?projeto=${project.slug}` : ""}`, placementError);
+  }
   await recalculate(supabase, workspaceId, project?.id);
   await supabase.from("activities").insert({ workspace_id: workspaceId, project_id: project?.id || null, client_id: project?.client_id || null, type: "task_created", description: `Tarefa criada: ${value.title}`, actor_id: user.id, actor_name: user.email });
   revalidatePath("/app"); revalidatePath("/app/tarefas");
@@ -48,6 +93,96 @@ export async function toggleTaskAction(id, projectId, slug) {
   await recalculate(supabase, workspaceId, task.project_id || projectId);
   await supabase.from("activities").insert({ workspace_id: workspaceId, project_id: task.project_id, client_id: task.client_id, type: completed ? "task_completed" : "task_reopened", description: `Tarefa ${completed ? "concluída" : "reaberta"}: ${task.title}`, actor_id: user.id, actor_name: user.email });
   revalidatePath("/app"); revalidatePath("/app/tarefas"); if (slug) revalidatePath(`/app/projetos/${slug}`);
+}
+
+export async function updateTaskStatusAction(id, status, slug = "") {
+  const allowed = ["todo", "in_progress", "waiting_client", "waiting_third_party", "blocked", "review", "completed", "cancelled"];
+  if (!allowed.includes(status)) throw new Error("Status inválido.");
+  const { supabase, user, workspaceId } = await requireWorkspace();
+  const { data: task, error } = await supabase.from("tasks")
+    .select("title,status,client_id,project_id")
+    .eq("id", id)
+    .eq("workspace_id", workspaceId)
+    .single();
+  if (error) throw error;
+
+  const update = {
+    status,
+    completed_at: status === "completed" ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  };
+  const wasFinalized = ["completed", "cancelled"].includes(task.status);
+  const isNowOpen = !["completed", "cancelled"].includes(status);
+  if (wasFinalized && isNowOpen) {
+    let queue = supabase.from("tasks")
+      .select("queue_position")
+      .eq("workspace_id", workspaceId)
+      .is("archived_at", null)
+      .not("status", "in", "(completed,cancelled,archived)")
+      .order("queue_position", { ascending: false, nullsFirst: false })
+      .limit(1);
+    queue = task.project_id ? queue.eq("project_id", task.project_id) : queue.is("project_id", null);
+    const { data: last } = await queue.maybeSingle();
+    update.queue_position = Number(last?.queue_position || 0) + 1000;
+  }
+
+  const { error: updateError } = await supabase.from("tasks").update(update).eq("id", id).eq("workspace_id", workspaceId);
+  if (updateError) throw updateError;
+  await recalculate(supabase, workspaceId, task.project_id);
+  await supabase.from("activities").insert({
+    workspace_id: workspaceId,
+    project_id: task.project_id,
+    client_id: task.client_id,
+    type: status === "completed" ? "task_completed" : "task_status_changed",
+    description: `Status da tarefa alterado: ${task.title}`,
+    actor_id: user.id,
+    actor_name: user.email,
+  });
+  revalidatePath("/app");
+  revalidatePath("/app/tarefas");
+  if (slug) revalidatePath(`/app/projetos/${slug}`);
+}
+
+export async function moveTaskInQueueAction(id, direction, slug = "") {
+  if (!["up", "down"].includes(direction)) throw new Error("Direção inválida.");
+  const { supabase, workspaceId } = await requireWorkspace();
+  const { data: task, error } = await supabase.from("tasks").select("id,project_id").eq("id", id).eq("workspace_id", workspaceId).single();
+  if (error) throw error;
+
+  const siblings = await openQueue(supabase, workspaceId, task.project_id);
+
+  const currentIndex = siblings.findIndex((item) => item.id === id);
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= siblings.length) return;
+  const reordered = [...siblings];
+  [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+
+  await persistQueue(supabase, workspaceId, reordered);
+
+  revalidatePath("/app");
+  revalidatePath("/app/tarefas");
+  if (slug) revalidatePath(`/app/projetos/${slug}`);
+}
+
+export async function reorderTaskQueueAction(orderedIds, slug = "") {
+  if (!Array.isArray(orderedIds) || !orderedIds.length || orderedIds.length > 500) throw new Error("Fila inválida.");
+  const uniqueIds = [...new Set(orderedIds)];
+  if (uniqueIds.length !== orderedIds.length || uniqueIds.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) throw new Error("Fila inválida.");
+  const { supabase, workspaceId } = await requireWorkspace();
+  const { data, error } = await supabase.from("tasks")
+    .select("id,project_id,status,archived_at")
+    .eq("workspace_id", workspaceId)
+    .in("id", uniqueIds);
+  if (error) throw error;
+  if (data.length !== uniqueIds.length) throw new Error("Uma ou mais tarefas não pertencem a este workspace.");
+  const projectIds = new Set(data.map((item) => item.project_id || "personal"));
+  if (projectIds.size !== 1 || data.some((item) => item.archived_at || ["completed", "cancelled", "archived"].includes(item.status))) throw new Error("A fila deve conter somente tarefas abertas do mesmo contexto.");
+
+  const byId = new Map(data.map((item) => [item.id, item]));
+  await persistQueue(supabase, workspaceId, uniqueIds.map((id) => byId.get(id)));
+  revalidatePath("/app");
+  revalidatePath("/app/tarefas");
+  if (slug) revalidatePath(`/app/projetos/${slug}`);
 }
 
 export async function updateTaskAction(id, formData) {

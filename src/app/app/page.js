@@ -18,7 +18,7 @@ export default async function Overview({ searchParams }) {
   const tomorrow = new Date(todayStart); tomorrow.setDate(tomorrow.getDate() + 1);
   const [projects, tasks, projectTasks, personalNotes] = await Promise.all([
     projectIds.length ? supabase.from("projects").select("id,name,slug,status,last_activity_at,clients(name)").eq("workspace_id", workspaceId).in("id", projectIds).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(6) : empty,
-    supabase.from("tasks").select("id,title,due_at,status,priority,project_id,projects(name,slug)").eq("workspace_id", workspaceId).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("due_at", { ascending: true, nullsFirst: false }).limit(80),
+    supabase.from("tasks").select("id,title,due_at,status,priority,project_id,queue_position,projects(name,slug)").eq("workspace_id", workspaceId).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("queue_position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }).limit(80),
     projectIds.length ? supabase.from("tasks").select("project_id,status").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null).not("status", "in", "(cancelled,archived)") : empty,
     supabase.from("notes").select("id,title,content,updated_at").eq("workspace_id", workspaceId).is("project_id", null).is("archived_at", null).order("updated_at", { ascending: false }).limit(5),
   ]);

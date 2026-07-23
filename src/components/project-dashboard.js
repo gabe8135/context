@@ -1,20 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, BookOpen, CheckCircle2, CheckSquare, Circle, CircleDollarSign, Clock3, FileText, FolderOpen, Lightbulb, PackageCheck, Pencil, Plus, Server, Video } from "lucide-react";
-import { useState, useTransition } from "react";
-import { toggleTaskAction } from "@/app/app/tarefas/actions";
+import { AlertTriangle, BookOpen, CheckCircle2, CheckSquare, Circle, CircleDollarSign, Clock3, FileText, FolderOpen, GripVertical, Lightbulb, PackageCheck, Pencil, Plus, Server, Video } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { reorderTaskQueueAction, toggleTaskAction } from "@/app/app/tarefas/actions";
 import { NaturalCapture } from "./natural-capture";
 import { NoteDetailsModal } from "./note-details-modal";
 import { ProjectInfoModal } from "./project-info-modal";
 import { TaskDetailsModal } from "./task-details-modal";
 import { calculateProjectProgress } from "@/lib/project-progress";
+import { taskPriorityLabel } from "@/lib/task-labels";
 
 const money = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(cents / 100);
 const due = (date) => date ? new Date(date).toLocaleDateString("pt-BR") : "Sem prazo";
 
 export function ProjectDashboard({ project }) {
   const [tasks, setTasks] = useState(project.tasks);
+  const tasksRef = useRef(project.tasks);
+  const draggedIdRef = useRef(null);
+  const [draggedId, setDraggedId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedNote, setSelectedNote] = useState(null);
   const [selectedInfo, setSelectedInfo] = useState(null);
@@ -25,8 +29,48 @@ export function ProjectDashboard({ project }) {
 
   function toggle(task) {
     const markCompleted = task.status !== "completed";
-    setTasks((items) => items.map((item) => item.id === task.id ? { ...item, status: markCompleted ? "completed" : "todo" } : item));
+    const next = tasksRef.current.map((item) => item.id === task.id ? { ...item, status: markCompleted ? "completed" : "todo" } : item);
+    tasksRef.current = next;
+    setTasks(next);
     startTransition(() => toggleTaskAction(task.id, project.id, project.slug));
+  }
+
+  function startDrag(event, taskId) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    draggedIdRef.current = taskId;
+    setDraggedId(taskId);
+  }
+
+  function dragOver(event, taskId) {
+    const activeId = draggedIdRef.current;
+    if (!activeId || activeId === taskId) return;
+    event.preventDefault();
+    const items = tasksRef.current;
+    const openTasks = items.filter((item) => item.status !== "completed");
+    const from = openTasks.findIndex((item) => item.id === activeId);
+    const to = openTasks.findIndex((item) => item.id === taskId);
+    if (from < 0 || to < 0) return;
+    const reordered = [...openTasks];
+    const [moving] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moving);
+    const next = [...reordered, ...items.filter((item) => item.status === "completed")];
+    tasksRef.current = next;
+    setTasks(next);
+  }
+
+  function dragMove(event) {
+    if (!draggedIdRef.current) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-task-id]");
+    if (target?.dataset.taskId) dragOver(event, target.dataset.taskId);
+  }
+
+  function finishDrag() {
+    if (!draggedIdRef.current) return;
+    const orderedIds = tasksRef.current.filter((item) => item.status !== "completed").map((item) => item.id);
+    draggedIdRef.current = null;
+    setDraggedId(null);
+    startTransition(() => reorderTaskQueueAction(orderedIds, project.slug));
   }
 
   return <article className="content project-document">
@@ -41,8 +85,8 @@ export function ProjectDashboard({ project }) {
 
     <div className="document-work-grid"><section className="document-section" id="proximos-passos">
       <SectionTitle icon={CheckSquare} title="Próximos passos" action={`/app/tarefas/nova?projeto=${project.slug}`} actionLabel="Nova tarefa"/>
-      <p className="section-description">O que move o projeto agora, ordenado pelo prazo mais próximo.</p>
-      <div className="document-checklist">{open.length ? open.slice(0, 8).map((task) => <TaskRow key={task.id} task={task} busy={busy} onToggle={() => toggle(task)} onOpen={() => setSelectedTask(task)}/>) : <Empty text="Nada pendente. Defina o próximo passo quando precisar."/>}</div>
+      <p className="section-description">Fila manual de execução: o primeiro item é o próximo a ser feito, mesmo sem prazo.</p>
+      <div className="document-checklist">{open.length ? open.slice(0, 8).map((task, index) => <TaskRow key={task.id} task={task} rank={index + 1} busy={busy} dragging={draggedId === task.id} onToggle={() => toggle(task)} onOpen={() => setSelectedTask(task)} onDragStart={(event) => startDrag(event, task.id)} onDragMove={dragMove} onDragEnd={finishDrag}/>) : <Empty text="Nada pendente. Defina o próximo passo quando precisar."/>}</div>
     </section>
 
     <section className="document-section" id="etapas">
@@ -82,7 +126,7 @@ export function ProjectDashboard({ project }) {
 }
 
 function SectionTitle({ icon: Icon, title, action, actionLabel }) { return <header className="document-section-title"><div><Icon size={19}/><h2>{title}</h2></div>{action && <Link className="btn" href={action}><Plus size={14}/>{actionLabel}</Link>}</header>; }
-function TaskRow({ task, busy, onToggle, onOpen }) { return <div className="document-task"><button className="task-state" disabled={busy} onClick={onToggle} aria-label={task.status === "completed" ? "Reabrir tarefa" : "Concluir tarefa"}>{task.status === "completed" ? <CheckCircle2/> : <Circle/>}</button><button className="task-content" onClick={onOpen}><b className={task.status === "completed" ? "done" : ""}>{task.title}</b><span>{task.priority} · {due(task.due_at)}</span></button></div>; }
+function TaskRow({ task, rank, busy, dragging, onToggle, onOpen, onDragStart, onDragMove, onDragEnd }) { return <div className={`document-task ${dragging ? "is-dragging" : ""}`} data-task-id={task.id}>{rank && <span className="task-rank" aria-label={`Posição ${rank} na fila`}>{rank}</span>}<button className="task-state" disabled={busy} onClick={onToggle} aria-label={task.status === "completed" ? "Reabrir tarefa" : "Concluir tarefa"}>{task.status === "completed" ? <CheckCircle2/> : <Circle/>}</button><button className="task-content" onClick={onOpen}><b className={task.status === "completed" ? "done" : ""}>{task.title}</b><span>{taskPriorityLabel(task.priority)} · {due(task.due_at)}</span></button>{rank && <button type="button" className="task-drag-handle" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} aria-label={`Arrastar ${task.title} para outra posição`} title="Segure e arraste para reorganizar"><GripVertical/></button>}</div>; }
 function Stage({ label, count }) { return <div className="stage"><span>{label}</span><b>{count}</b></div>; }
 function KnowledgeBlock({ icon: Icon, title, href, rows = [], render, onSelect }) { return <div className="knowledge-block"><header><div><Icon size={16}/><b>{title}</b></div><Link href={href}>Abrir tudo</Link></header>{rows.length ? rows.slice(0, 4).map((row) => { const item = render(row); return onSelect ? <button type="button" className="knowledge-row" onClick={() => onSelect(row)} key={row.id}><b>{item.title}</b><span>{item.meta || "Sem detalhes"}</span></button> : <Link className="knowledge-row" href={item.href} key={row.id}><b>{item.title}</b><span>{item.meta || "Sem detalhes"}</span></Link>; }) : <Empty text={`Nenhum item em ${title.toLowerCase()}.`}/>}</div>; }
 function Empty({ text }) { return <div className="document-empty">{text}</div>; }
