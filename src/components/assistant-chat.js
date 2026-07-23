@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Check, LoaderCircle, RefreshCw, Send, Sparkles, Square, Trash2, User, X } from "lucide-react";
+import { Bot, Check, ClipboardCheck, LoaderCircle, MessageSquare, RefreshCw, Send, Sparkles, Square, Trash2, User, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 function initialMessage(context) {
@@ -21,6 +21,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   const [notice, setNotice] = useState("");
   const [successMessage, setSuccessMessage] = useState(success || "");
   const [refineProposalId, setRefineProposalId] = useState(null);
+  const [mobilePane, setMobilePane] = useState("chat");
   const abortRef = useRef(null);
   const inputRef = useRef(null);
   const messagesRef = useRef(null);
@@ -76,6 +77,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
     const controller = new AbortController();
     abortRef.current = controller;
     setMessages(next);
+    setMobilePane("chat");
     setInput("");
     setLoading(true);
     setNotice("");
@@ -101,6 +103,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
         if (result.proposal_action === "append") return [...current, ...(result.proposals || [])];
         return current;
       });
+      if (result.proposals?.length) setMobilePane("proposals");
       if (result.proposal_action === "replace") setNotice("Proposta anterior substituída pela versão refinada.");
     } catch (requestError) {
       const content = requestError.name === "AbortError"
@@ -115,12 +118,15 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   }
 
   function dismissProposal(id) {
-    setProposals((current) => current.filter((proposal) => proposal.id !== id));
+    const remaining = proposals.filter((proposal) => proposal.id !== id);
+    setProposals(remaining);
+    if (!remaining.length) setMobilePane("chat");
     setNotice("Proposta recusada. Nenhum dado foi alterado.");
   }
 
   function requestRefinement(proposal) {
     setRefineProposalId(proposal.id);
+    setMobilePane("chat");
     setInput(`Refaça a proposta "${proposal.title}" considerando toda a nossa conversa. Quero uma versão mais precisa e útil. `);
     setNotice("Explique o que deve mudar e envie. A nova versão substituirá a proposta atual.");
     window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -129,6 +135,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   function discardAll() {
     if (!proposals.length || window.confirm(`Descartar as ${proposals.length} propostas pendentes? Nada será salvo.`)) {
       setProposals([]);
+      setMobilePane("chat");
       setNotice("Propostas descartadas. Nenhum dado foi alterado.");
     }
   }
@@ -140,6 +147,7 @@ export function AssistantChat({ context, projects, confirmAction, success, error
     setMessages([initialMessage(context)]);
     setProposals([]);
     setRefineProposalId(null);
+    setMobilePane("chat");
     setInput("");
     setNotice("Nova conversa iniciada.");
     sessionStorage.removeItem(storageKey);
@@ -149,7 +157,11 @@ export function AssistantChat({ context, projects, confirmAction, success, error
   const names = useMemo(() => new Map([[null, "Pessoal"], ...projects.map((project) => [project.id, project.name])]), [projects]);
   const typeNames = { task: "Tarefa", note: "Nota", decision: "Decisão" };
 
-  return <div className="assistant-layout">
+  return <div className={`assistant-layout assistant-pane-${mobilePane}`}>
+    {proposals.length > 0 && <div className="assistant-mobile-switch" role="tablist" aria-label="Alternar entre conversa e propostas">
+      <button type="button" role="tab" aria-selected={mobilePane === "chat"} className={mobilePane === "chat" ? "active" : ""} onClick={() => setMobilePane("chat")}><MessageSquare size={15}/> Conversa</button>
+      <button type="button" role="tab" aria-selected={mobilePane === "proposals"} className={mobilePane === "proposals" ? "active" : ""} onClick={() => setMobilePane("proposals")}><ClipboardCheck size={15}/> Propostas <span>{proposals.length}</span></button>
+    </div>}
     <section className="panel assistant-chat-panel">
       <header className="panel-head assistant-panel-head">
         <div><div className="panel-title"><Bot size={18}/> Copiloto Squire</div><div className="meta">Leitura automática · gravação somente após confirmação</div></div>
