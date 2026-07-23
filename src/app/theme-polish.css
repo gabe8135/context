@@ -1,17 +1,17 @@
-/* Paleta de alto contraste para trabalho prolongado. */
+/* Squire: claro orgânico em verde e bege; escuro técnico em azul e laranja. */
 :root{
-  --canvas:#f5f7fa;
-  --surface:#ffffff;
-  --raised:#eef2f6;
-  --ink:#18212f;
-  --muted:#5d6979;
-  --line:#d7dde6;
-  --brand:#0f766e;
-  --brand-hover:#0b5f59;
-  --brand-soft:#dff4f0;
-  --accent:#6d3bd1;
-  --accent-soft:#eee8fb;
-  --link:#0b675f;
+  --canvas:#f5f1e8;
+  --surface:#fffcf6;
+  --raised:#ece7da;
+  --ink:#17251b;
+  --muted:#687268;
+  --line:#ddd7c9;
+  --brand:#357a4a;
+  --brand-hover:#28633b;
+  --brand-soft:#e1eee3;
+  --accent:#4f8a5b;
+  --accent-soft:#e7f1e7;
+  --link:#2f6d42;
   --button-ink:#ffffff;
   --warning:#9a5700;
   --warning-soft:#fff1d5;
@@ -19,43 +19,43 @@
   --danger-soft:#fde7eb;
   --success:#18794e;
   --success-soft:#dff5e9;
-  --progress-start:#0f766e;
-  --progress-end:#2aa89b;
-  --sidebar:#172033;
-  --sidebar-raised:#263147;
-  --sidebar-text:#f4f7fb;
-  --sidebar-muted:#b7c1d1;
-  --shadow:0 12px 32px rgba(24,33,47,.09);
+  --progress-start:#357a4a;
+  --progress-end:#79a86a;
+  --sidebar:#e8e1d3;
+  --sidebar-raised:#d9d1c1;
+  --sidebar-text:#203126;
+  --sidebar-muted:#667268;
+  --shadow:0 12px 32px rgba(43,58,45,.10);
 }
 
 [data-theme="dark"]{
   color-scheme:dark;
-  --canvas:#090e16;
-  --surface:#111a27;
-  --raised:#182333;
+  --canvas:#08111f;
+  --surface:#101d2e;
+  --raised:#17263a;
   --ink:#f2f6fc;
-  --muted:#abb7c7;
-  --line:#2b394b;
-  --brand:#5eead4;
-  --brand-hover:#7cf3df;
-  --brand-soft:#153d3a;
-  --accent:#b59cff;
-  --accent-soft:#302750;
-  --link:#78e7d5;
-  --button-ink:#062b27;
+  --muted:#9fb0c7;
+  --line:#26364b;
+  --brand:#ff7a00;
+  --brand-hover:#ff982f;
+  --brand-soft:#402510;
+  --accent:#ffb347;
+  --accent-soft:#432b12;
+  --link:#ff9d3d;
+  --button-ink:#101722;
   --warning:#ffc46b;
-  --warning-soft:#493318;
+  --warning-soft:#3d2c18;
   --danger:#ff9aa7;
-  --danger-soft:#48232b;
+  --danger-soft:#43242d;
   --success:#79e2a7;
-  --success-soft:#173b2b;
-  --progress-start:#5eead4;
-  --progress-end:#b59cff;
-  --sidebar:#0c1320;
-  --sidebar-raised:#172235;
+  --success-soft:#173629;
+  --progress-start:#4ea5d9;
+  --progress-end:#ff7a00;
+  --sidebar:#06101d;
+  --sidebar-raised:#13243a;
   --sidebar-text:#f1f7fb;
-  --sidebar-muted:#a7bac8;
-  --shadow:0 18px 44px rgba(0,0,0,.38);
+  --sidebar-muted:#9fb0c7;
+  --shadow:0 18px 44px rgba(0,0,0,.42);
 }
 
 html,body{background:var(--canvas);color:var(--ink)}
@@ -66,7 +66,7 @@ a{color:var(--link)}
 .sidebar{background:var(--sidebar);color:var(--sidebar-text);scrollbar-color:var(--line) transparent}
 .brand{color:var(--sidebar-text)}
 .brand-mark{border-color:color-mix(in srgb,var(--brand) 70%,var(--sidebar-text));color:var(--accent);background:color-mix(in srgb,var(--sidebar-raised) 75%,transparent)}
-.brand{letter-spacing:-.02em}.brand-mark{width:36px;height:36px;border:0;border-radius:12px;color:#f5f3ff;background:linear-gradient(145deg,#8b5cf6,#5b5ee9);box-shadow:0 8px 22px rgba(91,94,233,.28),inset 0 1px 0 rgba(255,255,255,.28)}[data-theme="light"] .brand-mark{color:#fff;background:linear-gradient(145deg,#7257e8,#4f63d8);box-shadow:0 7px 18px rgba(79,99,216,.22)}
+.brand{letter-spacing:-.02em}.brand-mark{width:36px;height:36px;border:0;border-radius:12px;color:#fff;background:linear-gradient(145deg,#4f8a5b,#28633b);box-shadow:0 7px 18px rgba(40,99,59,.22),inset 0 1px 0 rgba(255,255,255,.25)}[data-theme="dark"] .brand-mark{color:#101722;background:linear-gradient(145deg,#ffb347,#ff7a00);box-shadow:0 8px 22px rgba(255,122,0,.28),inset 0 1px 0 rgba(255,255,255,.24)}
 .focus-card{margin:2px 6px 14px;padding:13px;border:1px solid color-mix(in srgb,var(--brand) 32%,var(--sidebar-line));border-radius:12px;background:color-mix(in srgb,var(--sidebar-raised) 78%,transparent);display:grid;gap:4px}.focus-card small{font-size:9px;letter-spacing:.12em;color:var(--accent)}.focus-card b{color:var(--sidebar-text);overflow:hidden;text-overflow:ellipsis}.focus-card span{font-size:11px;color:var(--sidebar-muted)}.focus-card a{display:flex;align-items:center;gap:5px;color:var(--sidebar-muted);font-size:11px;text-decoration:none;margin-top:7px}.focus-card a:hover{color:var(--accent)}
 .nav-label,.sidebar-foot{color:var(--sidebar-muted)}
 .sidebar-foot{border-color:color-mix(in srgb,var(--sidebar-muted) 28%,transparent)}

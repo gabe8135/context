@@ -3,7 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const colors = { dark: "#090e16", light: "#f5f7fa" };
+const colors = { dark: "#08111f", light: "#f5f1e8" };
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
