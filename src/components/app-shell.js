@@ -48,7 +48,7 @@ export function AppShell({ children, preview = false, context = null }) {
         <GlobalSearch/>
         <div className="top-actions">
           <RouteAwareLink className="btn" href={focusHref || "/app/entrada"}>{context?.type === "project" ? <FolderKanban size={14}/> : context?.type === "client" ? <Users size={14}/> : <Inbox size={14}/>} {context?.type === "project" ? "Projeto" : context?.type === "client" ? "Cliente" : "Entrada"}</RouteAwareLink>
-          <CalendarQuickView/>
+          <CalendarQuickView projectSlug={context?.type === "project" ? context.slug : ""}/>
           <ThemeToggle/>
         </div>
       </header>

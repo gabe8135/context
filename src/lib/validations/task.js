@@ -8,6 +8,7 @@ export const taskSchema = z.object({
   priority: z.enum(["low", "medium", "high", "urgent"]),
   starts_at: z.string().optional(),
   due_at: z.string().optional(),
+  reminder_at: z.string().optional(),
   next_action: z.string().trim().max(300).optional(),
 });
 
@@ -18,6 +19,7 @@ export function taskPayload(formData) {
     project_id: value.project_id || null,
     starts_at: value.starts_at || null,
     due_at: value.due_at || null,
+    reminder_at: value.reminder_at || null,
     completed_at: value.status === "completed" ? new Date().toISOString() : null,
   };
 }

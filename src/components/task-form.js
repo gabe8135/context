@@ -10,6 +10,7 @@ export function TaskForm({ action, projects, selectedSlug, error }) {
       <label className="field"><span>Prioridade</span><select name="priority" defaultValue="medium"><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label>
       <label className="field"><span>Início</span><input name="starts_at" type="datetime-local"/></label>
       <label className="field"><span>Prazo</span><input name="due_at" type="datetime-local"/></label>
+      <label className="field"><span>Notificar em</span><input name="reminder_at" type="datetime-local"/></label>
       <label className="field full"><span>Próxima ação</span><input name="next_action"/></label>
       <label className="field full"><span>Descrição</span><textarea name="description" rows="5"/></label>
     </div>
