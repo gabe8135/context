@@ -9,6 +9,7 @@ import { CalendarQuickView } from "./calendar-quick-view";
 import { ThemeToggle } from "./theme-toggle";
 import { ActiveNavLink } from "./active-nav-link";
 import { PushNotificationControl } from "./push-notification-control";
+import { AutoDismissNotices } from "./auto-dismiss-notices";
 
 const general = [
   { label: "Principal", items: [[LayoutDashboard, "Início", "/app"], [BrainCircuit, "Capturar e organizar", "/app/organizar"], [CalendarDays, "Agenda", "/app/agenda"], [Users, "Clientes", "/app/clientes"], [FolderKanban, "Projetos", "/app/projetos"]] },
@@ -43,6 +44,7 @@ export function AppShell({ children, preview = false, context = null }) {
     </aside>
     <main className="main">
       <ResponsiveTables/>
+      <AutoDismissNotices/>
       {preview && <div className="preview">Modo de demonstração</div>}
       <header className="topbar">
         <MobileSidebarController/>

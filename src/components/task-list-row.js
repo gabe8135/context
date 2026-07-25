@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { CheckCircle2, ChevronDown, GripVertical, Pencil } from "lucide-react";
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { reorderTaskQueueAction, updateTaskStatusAction } from "@/app/app/tarefas/actions";
 import { TaskDetailsModal } from "@/components/task-details-modal";
+import { useTaskQueueDrag } from "@/hooks/use-task-queue-drag";
 import { TASK_STATUS_LABELS, taskPriorityLabel } from "@/lib/task-labels";
 
 function dateOnly(value) {
@@ -13,62 +14,23 @@ function dateOnly(value) {
 
 export function TaskListRows({ initialTasks, scope }) {
   const [tasks, setTasks] = useState(initialTasks);
-  const tasksRef = useRef(initialTasks);
-  const draggedIdRef = useRef(null);
-  const [draggedId, setDraggedId] = useState(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [, startTransition] = useTransition();
-
-  function startDrag(event, taskId) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    draggedIdRef.current = taskId;
-    setDraggedId(taskId);
-  }
-
-  function dragOver(taskId) {
-    const activeId = draggedIdRef.current;
-    if (!activeId || activeId === taskId) return;
-    const items = tasksRef.current;
-    const queuedTasks = items.filter((item) => !["completed", "cancelled", "archived"].includes(item.status));
-    const from = queuedTasks.findIndex((item) => item.id === activeId);
-    const to = queuedTasks.findIndex((item) => item.id === taskId);
-    if (from < 0 || to < 0) return;
-    const reordered = [...queuedTasks];
-    const [moving] = reordered.splice(from, 1);
-    reordered.splice(to, 0, moving);
-    const next = [...reordered, ...items.filter((item) => ["completed", "cancelled", "archived"].includes(item.status))];
-    tasksRef.current = next;
-    setTasks(next);
-  }
-
-  function dragMove(event) {
-    if (!draggedIdRef.current) return;
-    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-task-id]");
-    if (target?.dataset.taskId) dragOver(target.dataset.taskId);
-  }
-
-  function finishDrag() {
-    if (!draggedIdRef.current) return;
-    const orderedIds = tasksRef.current
-      .filter((item) => !["completed", "cancelled", "archived"].includes(item.status))
-      .map((item) => item.id);
-    draggedIdRef.current = null;
-    setDraggedId(null);
-    if (orderedIds.length) startTransition(() => reorderTaskQueueAction(orderedIds, scope?.slug || ""));
-  }
+  const drag = useTaskQueueDrag({
+    tasks,
+    setTasks,
+    onCommit: (orderedIds) => startTransition(() => reorderTaskQueueAction(orderedIds, scope?.slug || "")),
+  });
 
   function changeStatus(taskId, status) {
-    const previous = tasksRef.current.find((item) => item.id === taskId)?.status;
-    const updated = tasksRef.current.map((item) => item.id === taskId
+    const previous = tasks.find((item) => item.id === taskId)?.status;
+    const updated = tasks.map((item) => item.id === taskId
       ? { ...item, status, completed_at: status === "completed" ? new Date().toISOString() : null }
       : item);
     const reopened = ["completed", "cancelled"].includes(previous) && !["completed", "cancelled"].includes(status);
     const next = reopened
       ? [...updated.filter((item) => item.id !== taskId), updated.find((item) => item.id === taskId)]
       : updated;
-    tasksRef.current = next;
     setTasks(next);
     startTransition(() => updateTaskStatusAction(taskId, status, scope?.slug || ""));
   }
@@ -83,10 +45,11 @@ export function TaskListRows({ initialTasks, scope }) {
     task={task}
     index={index}
     scope={scope}
-    dragging={draggedId === task.id}
-    onDragStart={(event) => startDrag(event, task.id)}
-    onDragMove={dragMove}
-    onDragEnd={finishDrag}
+    dragging={drag.draggedId === task.id}
+    dropTarget={drag.dropTargetId === task.id}
+    onDragStart={(event) => drag.startDrag(event, task.id)}
+    onDragMove={drag.moveDrag}
+    onDragEnd={drag.finishDrag}
     onStatusChange={(status) => changeStatus(task.id, status)}
   />)}
   {completedTasks.length > 0 && <tr className="completed-tasks-divider">
@@ -110,7 +73,7 @@ export function TaskListRows({ initialTasks, scope }) {
   </tbody>;
 }
 
-function TaskListRow({ task, index, scope, dragging, onDragStart, onDragMove, onDragEnd, onStatusChange }) {
+function TaskListRow({ task, index, scope, dragging, dropTarget, onDragStart, onDragMove, onDragEnd, onStatusChange }) {
   const [open, setOpen] = useState(false);
   const projectSlug = scope?.slug || task.projects?.slug || "";
   const context = task.projects?.name || task.clients?.name || "Pessoal";
@@ -121,7 +84,7 @@ function TaskListRow({ task, index, scope, dragging, onDragStart, onDragMove, on
 
   return <>
     <tr
-      className={`task-list-row ${dragging ? "is-dragging" : ""}`}
+      className={`task-list-row ${dragging ? "is-dragging" : ""} ${dropTarget ? "is-drop-target" : ""}`}
       data-task-id={task.id}
       data-status={task.status}
       tabIndex={0}

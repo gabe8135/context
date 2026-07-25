@@ -298,6 +298,7 @@
     box-shadow:0 10px 24px color-mix(in srgb,var(--brand) 18%,transparent);
     opacity:.94
   }
+  .tasks-list-page .tasks-compact-list .task-list-row.is-drop-target{position:relative;border-top-color:var(--brand);box-shadow:inset 0 3px 0 var(--brand)}
   .tasks-list-page .tasks-compact-list .completed-tasks-divider{display:block;padding:0;background:transparent;border:0;box-shadow:none}
   .tasks-list-page .tasks-compact-list .completed-tasks-divider td{display:block;padding:3px 0!important}
   .tasks-list-page .tasks-compact-list .completed-tasks-divider button{min-height:46px}
