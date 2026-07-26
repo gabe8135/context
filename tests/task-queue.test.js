@@ -7,6 +7,7 @@ const dashboardService = readFileSync(new URL("../src/services/project-dashboard
 const taskActions = readFileSync(new URL("../src/app/app/tarefas/actions.js", import.meta.url), "utf8");
 const dragHook = readFileSync(new URL("../src/hooks/use-task-queue-drag.js", import.meta.url), "utf8");
 const projectDashboard = readFileSync(new URL("../src/components/project-dashboard.js", import.meta.url), "utf8");
+const taskListRow = readFileSync(new URL("../src/components/task-list-row.js", import.meta.url), "utf8");
 
 test("migração cria e preenche uma posição persistente por fila", () => {
   assert.match(migration, /add column if not exists queue_position bigint/i);
@@ -20,6 +21,12 @@ test("arrasto compartilha animacao FLIP e auto-scroll nas bordas", () => {
   assert.match(dragHook, /window\.scrollBy\(0, speed\)/);
   assert.match(dragHook, /EDGE_SIZE = 96/);
   assert.match(dragHook, /dropTargetId/);
+  assert.match(dragHook, /cubic-bezier\(\.16,1,\.3,1\)/);
+  assert.match(dragHook, /layoutAnimations\.get\(element\)\?\.cancel\(\)/);
+  assert.match(dragHook, /window\.addEventListener\("pointerup", release, true\)/);
+  assert.match(dragHook, /releasePointerCapture/);
+  assert.doesNotMatch(projectDashboard, /onLostPointerCapture/);
+  assert.doesNotMatch(taskListRow, /onLostPointerCapture/);
 });
 
 test("painel do projeto torna o status da tarefa visivel", () => {

@@ -26,10 +26,11 @@
 .uniform-list-page .uniform-item-list>.item{background:var(--surface)}
 .modal-inline-form{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,1.25fr) auto;align-items:end;gap:10px;width:100%}
 .modal-inline-form label{display:grid;gap:5px;color:var(--muted);font-size:12px;font-weight:700}
-.task-list-drag-handle{display:grid;place-items:center;width:34px;height:38px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--raised);color:var(--muted);cursor:grab;touch-action:none;user-select:none}
-.task-list-drag-handle:hover{border-color:var(--brand);color:var(--brand)}
-.task-list-drag-handle:active{cursor:grabbing}
-.task-list-row.is-dragging{position:relative;z-index:3;border-color:var(--brand);background:var(--raised);box-shadow:0 10px 24px color-mix(in srgb,var(--brand) 18%,transparent);opacity:.94}
+.task-list-drag-handle{display:grid;place-items:center;width:34px;height:38px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--raised);color:var(--muted);cursor:grab;touch-action:none;user-select:none;transition:color .2s ease,border-color .2s ease,background-color .2s ease,box-shadow .2s ease,transform .2s cubic-bezier(.22,1,.36,1)}
+.task-list-drag-handle:hover{border-color:var(--brand);background:color-mix(in srgb,var(--brand-soft) 62%,var(--raised));color:var(--brand);box-shadow:0 7px 18px color-mix(in srgb,var(--brand) 13%,transparent);transform:translateY(-1px)}
+.task-list-drag-handle:active{cursor:grabbing;transform:scale(.94)}
+.task-list-row.is-dragging{position:relative;z-index:6;border-color:color-mix(in srgb,var(--brand) 82%,var(--line));background:color-mix(in srgb,var(--raised) 90%,var(--brand-soft));box-shadow:0 26px 58px color-mix(in srgb,#000 28%,transparent),0 10px 26px color-mix(in srgb,var(--brand) 26%,transparent),0 0 0 5px color-mix(in srgb,var(--brand) 11%,transparent);opacity:.98;transform:scale(1.026);animation:taskPremiumPickup .2s cubic-bezier(.16,1,.3,1) both}
+.task-list-row.is-dragging .task-list-drag-handle{border-color:var(--brand);background:var(--brand);color:#fff;box-shadow:0 7px 20px color-mix(in srgb,var(--brand) 30%,transparent)}
 .task-details-trigger{
   appearance:none;
   display:flex;
@@ -291,14 +292,9 @@
     user-select:none
   }
   .tasks-list-page .tasks-compact-list .task-list-drag-handle:active{cursor:grabbing}
-  .tasks-list-page .tasks-compact-list .task-list-row.is-dragging{
-    z-index:3;
-    border-color:var(--brand);
-    background:var(--raised);
-    box-shadow:0 10px 24px color-mix(in srgb,var(--brand) 18%,transparent);
-    opacity:.94
-  }
-  .tasks-list-page .tasks-compact-list .task-list-row.is-drop-target{position:relative;border-top-color:var(--brand);box-shadow:inset 0 3px 0 var(--brand)}
+  .tasks-list-page .tasks-compact-list .task-list-row.is-dragging{z-index:6}
+  .tasks-list-page .tasks-compact-list .task-list-row.is-drop-target{position:relative;border-top-color:transparent;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--brand) 16%,transparent)}
+  .tasks-list-page .tasks-compact-list .task-list-row.is-drop-target:before{content:"";position:absolute;z-index:4;top:-5px;left:10px;right:10px;height:4px;border-radius:99px;background:linear-gradient(90deg,transparent,var(--brand) 12%,var(--accent,var(--brand)) 50%,var(--brand) 88%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 10%,transparent),0 5px 18px color-mix(in srgb,var(--brand) 28%,transparent);animation:taskInsertionGlow .8s ease-in-out infinite alternate}
   .tasks-list-page .tasks-compact-list .completed-tasks-divider{display:block;padding:0;background:transparent;border:0;box-shadow:none}
   .tasks-list-page .tasks-compact-list .completed-tasks-divider td{display:block;padding:3px 0!important}
   .tasks-list-page .tasks-compact-list .completed-tasks-divider button{min-height:46px}
