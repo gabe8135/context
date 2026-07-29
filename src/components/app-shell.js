@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive, ArrowLeft, BookOpen, Bot, BrainCircuit, CalendarDays, CheckSquare, ChevronDown, CircleHelp, FileDown, FolderKanban, History, Inbox, KeyRound, Landmark, LayoutDashboard, LayoutTemplate, Lightbulb, Network, PackageCheck, Paperclip, Server, Settings, Users, Video, Wallet } from "lucide-react";
+import { Archive, ArrowLeft, BookOpen, Bot, BrainCircuit, CalendarDays, CheckSquare, ChevronDown, CircleHelp, FileDown, FileText, FolderKanban, History, Inbox, KeyRound, Landmark, LayoutDashboard, LayoutTemplate, Lightbulb, Network, PackageCheck, Paperclip, Server, Settings, Users, Video, Wallet } from "lucide-react";
 import { logoutAction } from "@/app/app/auth-actions";
 import { GlobalSearch } from "./global-search";
 import { MobileSidebarController } from "./mobile-sidebar-controller";
@@ -19,7 +19,7 @@ const general = [
 function projectGroups(project) {
   const query = `?projeto=${project.slug}`;
   return [
-    { label: "Projeto em foco", items: [[LayoutDashboard, "Página do projeto", `/app/projetos/${project.slug}`], [BrainCircuit, "Adicionar informação", `/app/organizar${query}`], [Bot, "Assistente", `/app/assistente${query}`], [CheckSquare, "Tarefas", `/app/tarefas${query}`], [BookOpen, "Notas", `/app/notas${query}`]] },
+    { label: "Projeto em foco", items: [[LayoutDashboard, "Página do projeto", `/app/projetos/${project.slug}`], [FileText, "Documento", `/app/projetos/${project.slug}/documento`], [BrainCircuit, "Adicionar informação", `/app/organizar${query}`], [Bot, "Assistente", `/app/assistente${query}`], [CheckSquare, "Tarefas", `/app/tarefas${query}`], [BookOpen, "Notas", `/app/notas${query}`]] },
     { label: "Mais do projeto", collapsible: true, items: [[Landmark, "Financeiro", `/app/financeiro${query}`], [Lightbulb, "Decisões", `/app/decisoes${query}`], [Video, "Reuniões", `/app/reunioes${query}`], [PackageCheck, "Entregáveis", `/app/operacao/entregaveis${query}`], [BookOpen, "Procedimentos", `/app/operacao/procedimentos${query}`], [KeyRound, "Credenciais", `/app/operacao/credenciais${query}`], [Paperclip, "Arquivos", `/app/operacao/arquivos${query}`], [Server, "Infraestrutura", `/app/infraestrutura${query}`], [Network, "Relações", `/app/projetos/${project.slug}/relacoes`], [History, "Histórico", `/app/projetos/${project.slug}/historico`], [FileDown, "Exportar", `/app/projetos/${project.slug}/exportar`]] }
   ];
 }

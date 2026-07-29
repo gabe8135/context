@@ -10,7 +10,12 @@ export async function getProjectDashboard(slug) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { project: demoProject, preview: true };
-  const { data: project, error } = await supabase.from("projects").select("id,slug,name,status,priority,agreed_value_cents,last_activity_at,clients(name)").eq("slug", slug).single();
+  let { data: project, error } = await supabase.from("projects").select("id,slug,name,status,priority,agreed_value_cents,last_activity_at,documentation_content,documentation_updated_at,clients(name)").eq("slug", slug).single();
+  if (error && /documentation_(content|updated_at)/i.test(error.message || "")) {
+    const fallback = await supabase.from("projects").select("id,slug,name,status,priority,agreed_value_cents,last_activity_at,clients(name)").eq("slug", slug).single();
+    project = fallback.data ? { ...fallback.data, documentation_content: "", documentation_updated_at: null } : null;
+    error = fallback.error;
+  }
   if (error?.code === "PGRST116") return { project: demoProject, preview: true };
   if (error) throw error;
 

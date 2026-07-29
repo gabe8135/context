@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth-context";
+import { sanitizeRichDocument } from "@/lib/rich-document";
 import { projectPayload, slugify } from "@/lib/validations/project";
 
 function fail(path, error) {
@@ -32,6 +33,32 @@ export async function updateProjectAction(id, formData) {
   revalidatePath("/app/projetos");
   revalidatePath(`/app/projetos/${data.slug}`);
   redirect(`/app/projetos/${data.slug}?sucesso=Projeto atualizado`);
+}
+
+export async function saveProjectDocumentationAction(id, slug, content) {
+  const { supabase, workspaceId } = await requireWorkspace();
+  const documentation = sanitizeRichDocument(String(content || "").replace(/\r\n/g, "\n"));
+  if (documentation.length > 120000) {
+    return { ok: false, message: "O documento ultrapassou o limite de 120 mil caracteres." };
+  }
+
+  const savedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      documentation_content: documentation,
+      documentation_updated_at: savedAt,
+      last_activity_at: savedAt,
+    })
+    .eq("id", id)
+    .eq("slug", slug)
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, message: error.message || "Não foi possível salvar o documento." };
+  revalidatePath(`/app/projetos/${slug}`);
+  return { ok: true, message: "Documento salvo.", updatedAt: savedAt };
 }
 
 export async function archiveProjectAction(id) {

@@ -165,6 +165,7 @@ const areas = [
   ["Agenda", "Calendário mensal de tarefas, reuniões e eventos com data marcada, detalhes e lembretes.", "Planejar a semana, consultar compromissos e escolher quando receber uma notificação."],
   ["Clientes", "Cadastro da pessoa ou empresa que contrata seus serviços. A listagem abre uma visualização com contatos e projetos.", "Guardar contato, origem, projetos relacionados e histórico do relacionamento antes de entrar na pasta completa."],
   ["Projetos", "É o trabalho principal realizado para um cliente. Reúne todas as informações relacionadas.", "Separar serviços, contratos ou iniciativas. Exemplo: “Site da Empresa X”."],
+  ["Documento do projeto", "Uma página completa com títulos, listas, links, cores, destaques e assistência de IA, salva dentro de cada projeto.", "Criar relatórios, escopos, planos de execução e documentação contínua. Você pode editar e salvar a mesma página quantas vezes precisar."],
   ["Tarefas", "Ações práticas que precisam ser feitas. Tarefas concluídas calculam o progresso do projeto e a fila manual define a ordem de execução.", "Registrar um próximo passo e colocá-lo na posição certa da fila, mesmo quando ainda não houver prazo."],
   ["Financeiro", "Controla previsões, receitas pagas, pagamentos parciais, despesas e descontos.", "Saber o que recebeu, o que ainda falta receber e o resultado real do projeto."],
   ["Decisões", "Preserva escolhas importantes e o motivo delas.", "Evitar rediscutir assuntos já definidos e registrar quando uma decisão substitui outra."],

@@ -8,6 +8,7 @@ import { useTaskQueueDrag } from "@/hooks/use-task-queue-drag";
 import { NaturalCapture } from "./natural-capture";
 import { NoteDetailsModal } from "./note-details-modal";
 import { ProjectInfoModal } from "./project-info-modal";
+import { ProjectDocumentation } from "./project-documentation";
 import { TaskDetailsModal } from "./task-details-modal";
 import { calculateProjectProgress } from "@/lib/project-progress";
 import { taskPriorityLabel, taskStatusLabel } from "@/lib/task-labels";
@@ -61,6 +62,8 @@ export function ProjectDashboard({ project }) {
       <div className="stage-grid"><Stage label="A fazer" count={tasks.filter((task) => task.status === "todo").length}/><Stage label="Em andamento" count={tasks.filter((task) => ["doing", "in_progress", "review"].includes(task.status)).length}/><Stage label="Concluído" count={completed}/></div>
       {completed > 0 && <details className="completed-work"><summary>Ver {completed} item(ns) concluído(s)</summary><div>{tasks.filter((task) => task.status === "completed").map((task) => <TaskRow key={task.id} task={task} busy={busy} onToggle={() => toggle(task)} onOpen={() => setSelectedTask(task)}/>)}</div></details>}
     </section></div>
+
+    <ProjectDocumentation project={project}/>
 
     <section className="document-section" id="contexto">
       <SectionTitle icon={BookOpen} title="Caderno do projeto" action={`/app/notas/nova?projeto=${project.slug}`} actionLabel="Nova nota"/>
