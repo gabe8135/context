@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarCheck, CheckSquare2, FolderKanban, Plus, Square, StickyNote } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckSquare2, FolderKanban, Plus, Square, StickyNote, Target } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { NaturalCapture } from "@/components/natural-capture";
 import { requireWorkspace } from "@/lib/auth-context";
 import { getActiveContextIds } from "@/lib/active-context";
 import { calculateProjectProgress } from "@/lib/project-progress";
 import { toggleTaskAction } from "./tarefas/actions";
+import { attachTaskDependencies, chooseCurrentFocus, isTaskBlockedByDependency } from "@/lib/workflow";
 
 export const dynamic = "force-dynamic";
 
@@ -18,23 +19,25 @@ export default async function Overview({ searchParams }) {
   const tomorrow = new Date(todayStart); tomorrow.setDate(tomorrow.getDate() + 1);
   const [projects, tasks, projectTasks, personalNotes] = await Promise.all([
     projectIds.length ? supabase.from("projects").select("id,name,slug,status,last_activity_at,clients(name)").eq("workspace_id", workspaceId).in("id", projectIds).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(6) : empty,
-    supabase.from("tasks").select("id,title,due_at,status,priority,project_id,queue_position,projects(name,slug)").eq("workspace_id", workspaceId).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("queue_position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }).limit(80),
+    supabase.from("tasks").select("id,title,due_at,status,priority,project_id,queue_position,depends_on_task_id,projects(name,slug)").eq("workspace_id", workspaceId).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("queue_position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }).limit(80),
     projectIds.length ? supabase.from("tasks").select("project_id,status").eq("workspace_id", workspaceId).in("project_id", projectIds).is("archived_at", null).not("status", "in", "(cancelled,archived)") : empty,
     supabase.from("notes").select("id,title,content,updated_at").eq("workspace_id", workspaceId).is("project_id", null).is("archived_at", null).order("updated_at", { ascending: false }).limit(5),
   ]);
   if (projects.error || tasks.error || projectTasks.error || personalNotes.error) throw projects.error || tasks.error || projectTasks.error || personalNotes.error;
   const activeProjectIds = new Set(projectIds);
-  const rows = (tasks.data || []).filter((task) => !task.project_id || activeProjectIds.has(task.project_id));
+  const rows = (await attachTaskDependencies(supabase, tasks.data || [])).filter((task) => !task.project_id || activeProjectIds.has(task.project_id));
   const personalTasks = rows.filter((task) => !task.project_id);
   const tasksByProject = (projectTasks.data || []).reduce((groups, task) => { (groups[task.project_id] ||= []).push(task); return groups; }, {});
   const recentProjects = (projects.data || []).map((project) => ({ ...project, progress: calculateProjectProgress(tasksByProject[project.id] || [], project.status) }));
   const today = rows.filter((task) => task.due_at && new Date(task.due_at) >= todayStart && new Date(task.due_at) < tomorrow);
   const overdue = rows.filter((task) => task.due_at && new Date(task.due_at) < todayStart);
+  const currentFocus = chooseCurrentFocus(rows);
 
   return <AppShell><div className="content workspace-home">
     <header className="home-welcome"><div><div className="eyebrow">Seu espaço de trabalho</div><h1 className="page-title">O que precisa da sua atenção?</h1><p className="subtitle">Comece pelo que importa. O restante continua guardado no contexto certo.</p></div></header>
     {query.sucesso && <p className="success-note">{query.sucesso}</p>}
     <NaturalCapture/>
+    {currentFocus && <section className="daily-focus-card"><span className="daily-focus-icon"><Target size={20}/></span><div><span className="eyebrow">É nisso que você deve trabalhar agora</span><h2>{currentFocus.title}</h2><p>{currentFocus.projects?.name || "Agenda pessoal"}{currentFocus.due_at ? ` · prazo ${new Date(currentFocus.due_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : " · prioridade da fila"}</p></div><Link className="btn primary" href={`/app/tarefas/${currentFocus.id}`}>Abrir tarefa</Link></section>}
     {(today.length > 0 || overdue.length > 0) && <div className={`home-focus-grid ${!today.length || !overdue.length ? "single" : ""}`}>
       {today.length > 0 && <FocusList icon={CalendarCheck} title="Hoje" rows={today}/>}
       {overdue.length > 0 && <FocusList icon={AlertTriangle} title="Atrasados" rows={overdue} danger/>}

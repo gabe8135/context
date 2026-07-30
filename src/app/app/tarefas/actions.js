@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth-context";
 import { taskPayload } from "@/lib/validations/task";
+import { nextRecurringDate } from "@/lib/workflow";
 
 async function recalculate(supabase, workspaceId, projectId) {
   if (!projectId) return;
@@ -21,6 +22,30 @@ async function findProject(supabase, workspaceId, projectId) {
   const { data, error } = await supabase.from("projects").select("id,client_id,slug").eq("id", projectId).eq("workspace_id", workspaceId).single();
   if (error) throw error;
   return data;
+}
+
+async function validateTaskDependency(supabase, workspaceId, taskId, projectId, dependencyId) {
+  if (!dependencyId) return;
+  if (taskId && dependencyId === taskId) throw new Error("Uma tarefa não pode depender dela mesma.");
+  const { data: tasks, error } = await supabase.from("tasks")
+    .select("id,project_id,depends_on_task_id")
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null);
+  if (error) throw error;
+  const byId = new Map((tasks || []).map((task) => [task.id, task]));
+  const dependency = byId.get(dependencyId);
+  if (!dependency || (dependency.project_id || null) !== (projectId || null)) {
+    throw new Error("A dependência precisa pertencer ao mesmo projeto ou contexto pessoal.");
+  }
+  if (!taskId) return;
+  const visited = new Set();
+  let current = dependency;
+  while (current) {
+    if (current.id === taskId) throw new Error("Essa dependência criaria um ciclo entre tarefas.");
+    if (visited.has(current.id)) throw new Error("Foi encontrado um ciclo na cadeia de dependências.");
+    visited.add(current.id);
+    current = current.depends_on_task_id ? byId.get(current.depends_on_task_id) : null;
+  }
 }
 
 async function openQueue(supabase, workspaceId, projectId) {
@@ -62,12 +87,34 @@ async function placeCreatedTask(supabase, workspaceId, taskId, projectId, placem
   await persistQueue(supabase, workspaceId, items);
 }
 
+async function createNextRecurringTask(supabase, workspaceId, userId, task) {
+  if (!task.recurrence_rule || !task.due_at) return;
+  const nextDue = nextRecurringDate(task.due_at, task.recurrence_rule, task.recurrence_interval);
+  if (!nextDue || (task.recurrence_ends_at && nextDue > new Date(`${task.recurrence_ends_at}T23:59:59`))) return;
+  const sourceId = task.recurrence_source_id || task.id;
+  const { data: existing, error: findError } = await supabase.from("tasks").select("id")
+    .eq("workspace_id", workspaceId).eq("recurrence_source_id", sourceId)
+    .eq("due_at", nextDue.toISOString()).maybeSingle();
+  if (findError) throw findError;
+  if (existing) return;
+  const nextStart = task.starts_at ? nextRecurringDate(task.starts_at, task.recurrence_rule, task.recurrence_interval) : null;
+  const { error } = await supabase.from("tasks").insert({
+    workspace_id: workspaceId, project_id: task.project_id, client_id: task.client_id,
+    title: task.title, description: task.description, status: "todo", priority: task.priority,
+    starts_at: nextStart?.toISOString() || null, due_at: nextDue.toISOString(), next_action: task.next_action,
+    created_by: userId, recurrence_rule: task.recurrence_rule, recurrence_interval: task.recurrence_interval || 1,
+    recurrence_ends_at: task.recurrence_ends_at, recurrence_source_id: sourceId, origin: "recurrence",
+  });
+  if (error) throw error;
+}
+
 export async function createTaskAction(formData) {
   const { supabase, user, workspaceId } = await requireWorkspace();
   let value;
   try { value = taskPayload(formData); } catch (error) { fail(`/app/tarefas/nova?projeto=${formData.get("project_slug") || ""}`, error); }
   let project;
   try { project = await findProject(supabase, workspaceId, value.project_id); } catch (error) { fail("/app/tarefas/nova", error); }
+  try { await validateTaskDependency(supabase, workspaceId, null, value.project_id, value.depends_on_task_id); } catch (error) { fail(`/app/tarefas/nova?projeto=${project?.slug || ""}`, error); }
   const { data: createdTask, error } = await supabase.from("tasks").insert({ ...value, workspace_id: workspaceId, client_id: project?.client_id || null, created_by: user.id }).select("id").single();
   if (error) fail(`/app/tarefas/nova${project ? `?projeto=${project.slug}` : ""}`, error);
   try {
@@ -85,11 +132,19 @@ export async function createTaskAction(formData) {
 
 export async function toggleTaskAction(id, projectId, slug) {
   const { supabase, user, workspaceId } = await requireWorkspace();
-  const { data: task, error } = await supabase.from("tasks").select("title,status,client_id,project_id").eq("id", id).eq("workspace_id", workspaceId).single();
+  const { data: task, error } = await supabase.from("tasks").select("*").eq("id", id).eq("workspace_id", workspaceId).single();
   if (error) throw error;
+  let dependencyStatus = null;
+  if (task.depends_on_task_id) {
+    const { data: dependency, error: dependencyError } = await supabase.from("tasks").select("status").eq("id", task.depends_on_task_id).eq("workspace_id", workspaceId).maybeSingle();
+    if (dependencyError) throw dependencyError;
+    dependencyStatus = dependency?.status || null;
+  }
   const completed = task.status !== "completed";
+  if (completed && task.depends_on_task_id && dependencyStatus !== "completed") throw new Error("Conclua primeiro a tarefa da qual esta depende.");
   const { error: updateError } = await supabase.from("tasks").update({ status: completed ? "completed" : "todo", completed_at: completed ? new Date().toISOString() : null }).eq("id", id).eq("workspace_id", workspaceId);
   if (updateError) throw updateError;
+  if (completed) await createNextRecurringTask(supabase, workspaceId, user.id, task);
   await recalculate(supabase, workspaceId, task.project_id || projectId);
   await supabase.from("activities").insert({ workspace_id: workspaceId, project_id: task.project_id, client_id: task.client_id, type: completed ? "task_completed" : "task_reopened", description: `Tarefa ${completed ? "concluída" : "reaberta"}: ${task.title}`, actor_id: user.id, actor_name: user.email });
   revalidatePath("/app"); revalidatePath("/app/tarefas"); if (slug) revalidatePath(`/app/projetos/${slug}`);
@@ -100,11 +155,18 @@ export async function updateTaskStatusAction(id, status, slug = "") {
   if (!allowed.includes(status)) throw new Error("Status inválido.");
   const { supabase, user, workspaceId } = await requireWorkspace();
   const { data: task, error } = await supabase.from("tasks")
-    .select("title,status,client_id,project_id")
+    .select("*")
     .eq("id", id)
     .eq("workspace_id", workspaceId)
     .single();
   if (error) throw error;
+  let dependencyStatus = null;
+  if (task.depends_on_task_id) {
+    const { data: dependency, error: dependencyError } = await supabase.from("tasks").select("status").eq("id", task.depends_on_task_id).eq("workspace_id", workspaceId).maybeSingle();
+    if (dependencyError) throw dependencyError;
+    dependencyStatus = dependency?.status || null;
+  }
+  if (status === "completed" && task.depends_on_task_id && dependencyStatus !== "completed") throw new Error("Conclua primeiro a tarefa da qual esta depende.");
 
   const update = {
     status,
@@ -128,6 +190,7 @@ export async function updateTaskStatusAction(id, status, slug = "") {
 
   const { error: updateError } = await supabase.from("tasks").update(update).eq("id", id).eq("workspace_id", workspaceId);
   if (updateError) throw updateError;
+  if (status === "completed" && task.status !== "completed") await createNextRecurringTask(supabase, workspaceId, user.id, task);
   await recalculate(supabase, workspaceId, task.project_id);
   await supabase.from("activities").insert({
     workspace_id: workspaceId,
@@ -192,6 +255,7 @@ export async function updateTaskAction(id, formData) {
   const { data: task, error: findError } = await supabase.from("tasks").select("project_id").eq("id", id).eq("workspace_id", workspaceId).single();
   if (findError) throw findError;
   const project = await findProject(supabase, workspaceId, value.project_id);
+  try { await validateTaskDependency(supabase, workspaceId, id, value.project_id, value.depends_on_task_id); } catch (error) { fail(`/app/tarefas/${id}`, error); }
   const { error } = await supabase.from("tasks").update({ ...value, client_id: project?.client_id || null, updated_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", workspaceId);
   if (error) throw error;
   await Promise.all([recalculate(supabase, workspaceId, task.project_id), recalculate(supabase, workspaceId, value.project_id)]);

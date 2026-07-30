@@ -10,6 +10,10 @@ export const taskSchema = z.object({
   due_at: z.string().optional(),
   reminder_at: z.string().optional(),
   next_action: z.string().trim().max(300).optional(),
+  depends_on_task_id: z.union([z.string().uuid(), z.literal("")]).optional(),
+  recurrence_rule: z.enum(["", "daily", "weekly", "monthly"]).optional(),
+  recurrence_interval: z.coerce.number().int().min(1).max(365).optional(),
+  recurrence_ends_at: z.string().optional(),
 });
 
 export function taskPayload(formData) {
@@ -20,6 +24,10 @@ export function taskPayload(formData) {
     starts_at: value.starts_at || null,
     due_at: value.due_at || null,
     reminder_at: value.reminder_at || null,
+    depends_on_task_id: value.depends_on_task_id || null,
+    recurrence_rule: value.recurrence_rule || null,
+    recurrence_interval: value.recurrence_interval || 1,
+    recurrence_ends_at: value.recurrence_ends_at || null,
     completed_at: value.status === "completed" ? new Date().toISOString() : null,
   };
 }

@@ -7,6 +7,7 @@ import { reorderTaskQueueAction, updateTaskStatusAction } from "@/app/app/tarefa
 import { TaskDetailsModal } from "@/components/task-details-modal";
 import { useTaskQueueDrag } from "@/hooks/use-task-queue-drag";
 import { TASK_STATUS_LABELS, taskPriorityLabel } from "@/lib/task-labels";
+import { isTaskBlockedByDependency } from "@/lib/workflow";
 
 function dateOnly(value) {
   return value ? new Date(value).toLocaleDateString("pt-BR") : "Sem prazo";
@@ -78,6 +79,7 @@ function TaskListRow({ task, index, scope, dragging, dropTarget, onDragStart, on
   const projectSlug = scope?.slug || task.projects?.slug || "";
   const context = task.projects?.name || task.clients?.name || "Pessoal";
   const canReorder = scope && !["completed", "cancelled", "archived"].includes(task.status);
+  const dependencyBlocked = isTaskBlockedByDependency(task);
 
   const openDetails = () => setOpen(true);
   const preventRowClick = (event) => event.stopPropagation();
@@ -116,7 +118,7 @@ function TaskListRow({ task, index, scope, dragging, dropTarget, onDragStart, on
       <td data-label="Tarefa" className="task-title-column">
         <button className="task-details-trigger" type="button" onClick={openDetails}>
           <b>{task.title}</b>
-          <span className="meta">{taskPriorityLabel(task.priority)}</span>
+          <span className="meta">{dependencyBlocked ? `Aguardando: ${task.depends_on_task?.title}` : taskPriorityLabel(task.priority)}</span>
         </button>
       </td>
       <td data-label="Contexto" className="task-context-column">{context}</td>

@@ -53,6 +53,9 @@ export default async function Agenda({ searchParams }) {
             <label className="field"><span>Início</span><input name="starts_at" type="datetime-local" required defaultValue={localDateTime(event?.starts_at)}/></label>
             <label className="field"><span>Fim</span><input name="ends_at" type="datetime-local" defaultValue={localDateTime(event?.ends_at)}/></label>
             <label className="field"><span>Notificar antes</span><select name="reminder_minutes" defaultValue={reminder === undefined || reminder === null ? "" : String(reminder)}><option value="">Sem notificação</option><option value="0">Na hora</option><option value="5">5 minutos</option><option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60">1 hora</option><option value="1440">1 dia</option></select></label>
+            <label className="field"><span>Recorrência</span><select name="recurrence_rule" defaultValue={event?.recurrence_rule || ""}><option value="">Não repetir</option><option value="daily">Diária</option><option value="weekly">Semanal</option><option value="monthly">Mensal</option></select></label>
+            <label className="field"><span>Repetir a cada</span><input name="recurrence_interval" type="number" min="1" max="365" defaultValue={event?.recurrence_interval || 1}/></label>
+            <label className="field"><span>Encerrar recorrência em</span><input name="recurrence_ends_at" type="date" defaultValue={event?.recurrence_ends_at || ""}/></label>
             <label className="field"><span>Local</span><input name="location" defaultValue={event?.location || ""}/></label>
             <label className="field full"><span>Descrição</span><textarea name="description" rows="3" defaultValue={event?.description || ""}/></label>
           </div>

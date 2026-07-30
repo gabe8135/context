@@ -9,7 +9,7 @@ export default async function NewTask({ searchParams }) {
   const { supabase, workspaceId } = await requireWorkspace();
   const [{ data: projects, error }, { data: tasks, error: tasksError }] = await Promise.all([
     supabase.from("projects").select("id,name,slug,clients(name)").eq("workspace_id", workspaceId).in("status", ["planned", "active", "waiting"]).is("archived_at", null).order("name"),
-    supabase.from("tasks").select("id,title,project_id,queue_position").eq("workspace_id", workspaceId).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("queue_position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }),
+    supabase.from("tasks").select("id,title,project_id,queue_position,status").eq("workspace_id", workspaceId).is("archived_at", null).not("status", "in", "(completed,cancelled,archived)").order("queue_position", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }),
   ]);
   if (error || tasksError) throw error || tasksError;
 

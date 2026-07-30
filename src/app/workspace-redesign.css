@@ -120,3 +120,55 @@
 @media(max-width:560px){.client-modal-facts{grid-template-columns:1fr}.client-details-modal .modal-actions{display:grid;grid-template-columns:1fr}.client-details-modal .modal-actions .btn{width:100%!important}}
 .mobile-progress-ring{display:none;place-items:center;width:48px;height:48px;border-radius:50%;background:conic-gradient(var(--brand) var(--progress),var(--line) 0);position:relative}.mobile-progress-ring::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--surface)}.mobile-progress-ring span{position:relative;z-index:1;font-size:10px;font-weight:800;color:var(--ink)}
 @media(max-width:620px){.content.project-document-page{overflow:visible}}
+
+/* Foco diário, semana, modelos e compartilhamento */
+.daily-focus-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px;margin:22px 0;padding:20px;border:1px solid color-mix(in srgb,var(--brand) 45%,var(--line));border-radius:20px;background:linear-gradient(135deg,var(--brand-soft),var(--surface));box-shadow:var(--shadow)}
+.daily-focus-card>svg,.daily-focus-icon{width:44px;height:44px;padding:10px;border-radius:14px;background:var(--brand);color:#fff}
+.daily-focus-card h2{margin:3px 0 2px;font-size:clamp(1.05rem,2vw,1.35rem)}.daily-focus-card p{margin:0;color:var(--muted)}
+.week-page{max-width:1160px}.week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}.week-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}.week-row:last-child{border-bottom:0}.week-row:hover{background:var(--raised)}.week-row>div{display:grid;gap:4px;min-width:0}.week-row b,.week-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.week-row span,.week-row time{font-size:.8rem;color:var(--muted)}.week-row.blocked{opacity:.66}.narrative-card{margin-top:18px}.narrative-card>p{margin:0;padding:18px;line-height:1.65}
+.week-row-button{display:flex;width:100%;margin:0;padding:15px 18px;border:0;border-bottom:1px solid var(--line);border-radius:0;appearance:none;-webkit-appearance:none;font:inherit;text-align:left;background:transparent;color:inherit;cursor:pointer;box-shadow:none}.week-row-button:last-child{border-bottom:0}.week-row-button:hover,.week-row-button:focus-visible{background:var(--raised);color:inherit}.week-row-button:focus-visible{position:relative;z-index:1;outline:2px solid var(--brand);outline-offset:-2px}
+.smart-template-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0}.smart-template-card{display:grid;gap:18px;padding:20px}.smart-template-card h2{margin:12px 0 6px}.smart-template-card p{margin:0;color:var(--muted);line-height:1.5}.smart-template-card form{display:grid;gap:10px;align-self:end}
+.share-panel{margin-top:24px;padding:22px}.share-panel .form-actions{flex-wrap:wrap}.share-link{display:flex;gap:10px;align-items:center;margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--field);overflow-wrap:anywhere}
+.public-share-page{min-height:100vh;padding:clamp(20px,5vw,64px);background:var(--canvas);color:var(--ink)}.public-share-shell{width:min(980px,100%);margin:auto}.public-share-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.public-share-row{display:grid;gap:5px;padding:14px 18px;border-bottom:1px solid var(--line)}.public-share-row:last-child{border-bottom:0}.public-share-row span{color:var(--muted);font-size:.84rem}
+.document-task.task-blocked{opacity:.72}.document-task.task-blocked .task-state{cursor:not-allowed}
+@media(max-width:900px){.smart-template-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.daily-focus-card{grid-template-columns:auto minmax(0,1fr);padding:16px}.daily-focus-card .btn{grid-column:1/-1;width:100%;justify-content:center}.week-grid,.smart-template-grid,.public-share-grid{grid-template-columns:1fr}.week-row{padding:13px 14px}.week-row time{white-space:nowrap}.share-panel{padding:16px}.share-link{font-size:.78rem}}
+
+/* Profundidade visual global: vidro discreto, sem sacrificar contraste. */
+body{
+  background:
+    radial-gradient(circle at 88% 8%,color-mix(in srgb,var(--brand) 10%,transparent) 0,transparent 28rem),
+    radial-gradient(circle at 14% 86%,color-mix(in srgb,var(--accent) 8%,transparent) 0,transparent 32rem),
+    var(--canvas);
+  background-attachment:fixed;
+}
+.main{position:relative;isolation:isolate;background:transparent}
+.main::before{
+  content:"";
+  position:fixed;
+  z-index:-1;
+  inset:68px 0 0 250px;
+  pointer-events:none;
+  background:
+    linear-gradient(135deg,color-mix(in srgb,var(--surface) 26%,transparent),transparent 42%),
+    radial-gradient(circle at 72% 24%,color-mix(in srgb,var(--brand) 7%,transparent),transparent 30rem);
+}
+.panel,.metrics,.focus-list,.project-folder-card,.personal-agenda-card,.daily-focus-card,.agenda-board,.agenda-create,.natural-capture,.client-contact-strip,.knowledge-block,.document-checklist,.completed-work>div,.stage,.structured-cards>a,.structured-cards>button,.project-documentation-preview,.rich-document-shell,.document-ai-panel{
+  backdrop-filter:blur(14px) saturate(1.08);
+  -webkit-backdrop-filter:blur(14px) saturate(1.08);
+}
+.panel,.focus-list,.project-folder-card,.personal-agenda-card,.stage,.knowledge-block{
+  background:color-mix(in srgb,var(--surface) 91%,transparent);
+  box-shadow:0 1px 0 color-mix(in srgb,#fff 8%,transparent),0 18px 50px color-mix(in srgb,var(--ink) 5%,transparent);
+}
+[data-theme="dark"] .panel,[data-theme="dark"] .focus-list,[data-theme="dark"] .project-folder-card,[data-theme="dark"] .personal-agenda-card,[data-theme="dark"] .stage,[data-theme="dark"] .knowledge-block{
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 20px 56px rgba(0,0,0,.18);
+}
+@media(max-width:900px){
+  .main::before{inset:68px 0 0}
+  body{background-attachment:scroll}
+}
+@media(prefers-reduced-transparency:reduce){
+  .panel,.focus-list,.project-folder-card,.personal-agenda-card,.stage,.knowledge-block{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+}

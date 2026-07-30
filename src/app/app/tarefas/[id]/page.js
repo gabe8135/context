@@ -11,22 +11,35 @@ export default async function TaskDetail({ params, searchParams }) {
   const { id } = await params;
   const query = await searchParams;
   const { supabase, workspaceId } = await requireWorkspace();
-  const [{ data: task, error }, { data: projects }] = await Promise.all([
+  const [{ data: task, error }, { data: projects }, { data: taskOptions }] = await Promise.all([
     supabase.from("tasks").select("*,projects(id,name,slug,clients(name))").eq("id", id).eq("workspace_id", workspaceId).single(),
     supabase.from("projects").select("id,name").eq("workspace_id", workspaceId).is("archived_at", null).order("name"),
+    supabase.from("tasks").select("id,title,project_id,status").eq("workspace_id", workspaceId).is("archived_at", null).neq("id", id).order("queue_position", { ascending: true, nullsFirst: false }),
   ]);
   if (error?.code === "PGRST116") notFound();
   if (error) throw error;
   const project = task.projects;
+  const availableDependencies = (taskOptions || []).filter((item) => (item.project_id || null) === (task.project_id || null));
+
   return <AppShell context={project ? { type: "project", ...project } : null}><div className="content narrow">
     <Link className="back-link" href={project ? `/app/projetos/${project.slug}` : "/app"}>← {project ? project.name : "Agenda pessoal"}</Link>
-    <div className="eyebrow">Execução</div><h1 className="page-title">Editar tarefa</h1>{query.sucesso && <p className="success-note">{query.sucesso}</p>}
+    <div className="eyebrow">Execução</div>
+    <h1 className="page-title">Editar tarefa</h1>
+    {query.sucesso && <p className="success-note">{query.sucesso}</p>}
+    {query.erro && <p className="error">{query.erro}</p>}
     <form action={updateTaskAction.bind(null, id)} className="panel form-panel"><div className="form-grid">
       <label className="field"><span>Contexto</span><select name="project_id" defaultValue={task.project_id || ""}><option value="">Pessoal · sem projeto</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <Field name="title" label="Título" value={task.title} required/>
       <label className="field"><span>Status</span><select name="status" defaultValue={task.status}>{[["todo", "A fazer"], ["in_progress", "Em andamento"], ["waiting_client", "Aguardando cliente"], ["waiting_third_party", "Aguardando terceiro"], ["blocked", "Bloqueada"], ["review", "Em revisão"], ["completed", "Concluída"], ["cancelled", "Cancelada"]].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       <label className="field"><span>Prioridade</span><select name="priority" defaultValue={task.priority}>{[["low", "Baixa"], ["medium", "Média"], ["high", "Alta"], ["urgent", "Urgente"]].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-      <Field name="starts_at" label="Início" type="datetime-local" value={dateTime(task.starts_at)}/><Field name="due_at" label="Prazo" type="datetime-local" value={dateTime(task.due_at)}/><Field name="next_action" label="Próxima ação" value={task.next_action || ""} full/>
+      <Field name="starts_at" label="Início" type="datetime-local" value={dateTime(task.starts_at)}/>
+      <Field name="due_at" label="Prazo" type="datetime-local" value={dateTime(task.due_at)}/>
+      <Field name="reminder_at" label="Notificar em" type="datetime-local" value={dateTime(task.reminder_at)}/>
+      <Field name="next_action" label="Próxima ação" value={task.next_action || ""} full/>
+      <label className="field"><span>Disponível depois de</span><select name="depends_on_task_id" defaultValue={task.depends_on_task_id || ""}><option value="">Sem dependência</option>{availableDependencies.map((item) => <option value={item.id} key={item.id}>{item.title}{item.status === "completed" ? " · concluída" : ""}</option>)}</select><small>A tarefa fica bloqueada até a escolhida ser concluída.</small></label>
+      <label className="field"><span>Recorrência</span><select name="recurrence_rule" defaultValue={task.recurrence_rule || ""}><option value="">Não repetir</option><option value="daily">Diária</option><option value="weekly">Semanal</option><option value="monthly">Mensal</option></select></label>
+      <Field name="recurrence_interval" label="Repetir a cada" type="number" value={task.recurrence_interval || 1}/>
+      <Field name="recurrence_ends_at" label="Encerrar recorrência em" type="date" value={task.recurrence_ends_at || ""}/>
       <label className="field full"><span>Descrição</span><textarea name="description" rows="6" defaultValue={task.description || ""}/></label>
     </div><div className="form-actions"><button className="btn primary">Salvar alterações</button></div></form>
     <form action={archiveTaskAction.bind(null, id, "")}><button className="btn" style={{ marginTop: 12 }}>Arquivar tarefa</button></form>

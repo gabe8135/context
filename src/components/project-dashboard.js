@@ -12,6 +12,7 @@ import { ProjectDocumentation } from "./project-documentation";
 import { TaskDetailsModal } from "./task-details-modal";
 import { calculateProjectProgress } from "@/lib/project-progress";
 import { taskPriorityLabel, taskStatusLabel } from "@/lib/task-labels";
+import { isTaskBlockedByDependency } from "@/lib/workflow";
 
 const money = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(cents / 100);
 const due = (date) => date ? new Date(date).toLocaleDateString("pt-BR") : "Sem prazo";
@@ -36,6 +37,7 @@ export function ProjectDashboard({ project }) {
   }, [project.tasks]);
 
   function toggle(task) {
+    if (task.status !== "completed" && isTaskBlockedByDependency(task)) return;
     const markCompleted = task.status !== "completed";
     setTasks((current) => current.map((item) => item.id === task.id ? { ...item, status: markCompleted ? "completed" : "todo" } : item));
     startTransition(() => toggleTaskAction(task.id, project.id, project.slug));

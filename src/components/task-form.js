@@ -20,6 +20,10 @@ export function TaskForm({ action, projects, tasks = [], selectedSlug, error }) 
       <label className="field"><span>Notificar em</span><input name="reminder_at" type="datetime-local"/></label>
       <label className="field"><span>Posição na fila (opcional)</span><select name="queue_placement" defaultValue="end"><option value="end">No fim da fila</option><option value="top">No início da fila</option>{queueTasks.flatMap((task) => [<option value={`before:${task.id}`} key={`before-${task.id}`}>Antes de: {task.title}</option>, <option value={`after:${task.id}`} key={`after-${task.id}`}>Depois de: {task.title}</option>])}</select><small>Você também poderá arrastar a tarefa depois.</small></label>
       <label className="field full"><span>Próxima ação</span><input name="next_action"/></label>
+      <label className="field"><span>Disponível depois de (opcional)</span><select name="depends_on_task_id" defaultValue=""><option value="">Sem dependência</option>{queueTasks.map((task) => <option value={task.id} key={task.id}>{task.title}</option>)}</select><small>Fica bloqueada até a tarefa escolhida ser concluída.</small></label>
+      <label className="field"><span>Recorrência</span><select name="recurrence_rule" defaultValue=""><option value="">Não repetir</option><option value="daily">Diária</option><option value="weekly">Semanal</option><option value="monthly">Mensal</option></select></label>
+      <label className="field"><span>Repetir a cada</span><input name="recurrence_interval" type="number" min="1" max="365" defaultValue="1"/></label>
+      <label className="field"><span>Encerrar recorrência em</span><input name="recurrence_ends_at" type="date"/></label>
       <label className="field full"><span>Descrição</span><textarea name="description" rows="5"/></label>
     </div>
     <div className="form-actions"><button className="btn primary">Criar tarefa</button></div>
