@@ -56,8 +56,12 @@ test("project document has a dedicated route, rich editor and contextual AI", ()
 test("document formatting toolbar stays visible and exposes every control on mobile", () => {
   const css = read("src/app/workspace-redesign.css");
 
-  assert.match(css, /\.rich-document-shell\{overflow:visible\}/);
+  assert.match(css, /\.rich-document-shell\{min-width:0;overflow:visible\}/);
   assert.match(css, /\.rich-document-toolbar\{position:sticky;top:68px/);
+  assert.match(css, /\.rich-document-layout>\*\{min-width:0\}/);
+  assert.match(css, /max-width:calc\(100% \+ 2px\)/);
+  assert.match(css, /@media\(max-width:1350px\)\{\.rich-document-toolbar\{gap:2px;padding:8px\}/);
+  assert.match(css, /@media\(max-width:1120px\)\{\.rich-document-layout\{grid-template-columns:1fr\}/);
   assert.match(css, /\.content\.project-document-page\{overflow:visible\}/);
   assert.match(css, /\.rich-document-toolbar\{top:60px;flex-wrap:wrap/);
   assert.match(css, /\.rich-document-toolbar \.toolbar-divider\{display:none\}/);
