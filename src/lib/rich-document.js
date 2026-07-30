@@ -1,6 +1,6 @@
 const allowedTags = new Set([
   "p", "div", "br", "h1", "h2", "h3", "h4", "strong", "b", "em", "i",
-  "u", "s", "strike", "ul", "ol", "li", "blockquote", "a", "span", "font", "hr",
+  "u", "s", "strike", "ul", "ol", "li", "blockquote", "a", "span", "font", "hr", "input",
 ]);
 
 const safeColor = /^(#[0-9a-f]{3,8}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|[a-z]{3,20})$/i;
@@ -17,11 +17,23 @@ export function sanitizeRichDocument(input) {
       if (!allowedTags.has(tag)) return "";
       if (match.startsWith("</")) return tag === "font" ? "</span>" : `</${tag}>`;
       if (tag === "br" || tag === "hr") return `<${tag}>`;
+      if (tag === "input") {
+        const checkbox = /\btype\s*=\s*["']checkbox["']/i.test(rawAttributes);
+        if (!checkbox) return "";
+        const checked = /\bchecked(?:\s*=\s*["'][^"']*["'])?/i.test(rawAttributes);
+        return `<input type="checkbox"${checked ? " checked" : ""}>`;
+      }
 
       if (tag === "a") {
         const href = rawAttributes.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1] || "";
         const safeHref = /^(https?:|mailto:|\/|#)/i.test(href) ? escapeAttribute(href) : "";
-        return safeHref ? `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">` : "<a>";
+        if (!safeHref) return "<a>";
+        const pageId = rawAttributes.match(/\bdata-project-page-id\s*=\s*["']([0-9a-f-]+)["']/i)?.[1] || "";
+        const pageAttribute = pageId ? ` data-project-page-id="${escapeAttribute(pageId)}"` : "";
+        const external = /^(https?:|mailto:)/i.test(safeHref);
+        return external
+          ? `<a href="${safeHref}"${pageAttribute} target="_blank" rel="noopener noreferrer">`
+          : `<a href="${safeHref}"${pageAttribute}>`;
       }
 
       if (tag === "font") {

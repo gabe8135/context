@@ -61,6 +61,106 @@ export async function saveProjectDocumentationAction(id, slug, content) {
   return { ok: true, message: "Documento salvo.", updatedAt: savedAt };
 }
 
+export async function createProjectPageAction(projectId, projectSlug, parentId, title) {
+  const { supabase, user, workspaceId } = await requireWorkspace();
+  const pageTitle = String(title || "").trim().slice(0, 120) || "Sem título";
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,slug")
+    .eq("id", projectId)
+    .eq("slug", projectSlug)
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null)
+    .single();
+  if (projectError || !project) return { ok: false, message: "Projeto não encontrado." };
+
+  let parent = null;
+  if (parentId) {
+    const result = await supabase
+      .from("project_pages")
+      .select("id")
+      .eq("id", parentId)
+      .eq("workspace_id", workspaceId)
+      .eq("project_id", projectId)
+      .is("archived_at", null)
+      .single();
+    if (result.error) return { ok: false, message: "A página superior não pertence a este projeto." };
+    parent = result.data.id;
+  }
+
+  let siblingQuery = supabase
+    .from("project_pages")
+    .select("position")
+    .eq("workspace_id", workspaceId)
+    .eq("project_id", projectId)
+    .is("archived_at", null);
+  siblingQuery = parent
+    ? siblingQuery.eq("parent_id", parent)
+    : siblingQuery.is("parent_id", null);
+  const { data: siblings, error: positionError } = await siblingQuery
+    .order("position", { ascending: false })
+    .limit(1);
+  if (positionError) return { ok: false, message: positionError.message };
+
+  let pageSlug = slugify(pageTitle) || "pagina";
+  pageSlug = `${pageSlug}-${crypto.randomUUID().slice(0, 6)}`;
+  const { data, error } = await supabase.from("project_pages").insert({
+    workspace_id: workspaceId,
+    project_id: projectId,
+    parent_id: parent,
+    title: pageTitle,
+    slug: pageSlug,
+    position: (siblings?.[0]?.position ?? -1) + 1,
+    created_by: user.id,
+  }).select("id,title").single();
+
+  if (error) return { ok: false, message: error.message || "Não foi possível criar a página." };
+  revalidatePath(`/app/projetos/${projectSlug}/documento`);
+  return {
+    ok: true,
+    page: data,
+    viewHref: `/app/projetos/${projectSlug}/documento/${data.id}`,
+    href: `/app/projetos/${projectSlug}/documento/${data.id}?editar=1`,
+  };
+}
+
+export async function saveProjectPageAction(pageId, projectId, projectSlug, title, content) {
+  const { supabase, workspaceId } = await requireWorkspace();
+  const pageTitle = String(title || "").trim().slice(0, 120) || "Sem título";
+  const clean = sanitizeRichDocument(String(content || "").replace(/\r\n/g, "\n"));
+  if (clean.length > 120000) return { ok: false, message: "A página ultrapassou o limite de 120 mil caracteres." };
+
+  const { data, error } = await supabase.from("project_pages").update({
+    title: pageTitle,
+    content: clean,
+  })
+    .eq("id", pageId)
+    .eq("project_id", projectId)
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null)
+    .select("id,title,updated_at")
+    .single();
+
+  if (error || !data) return { ok: false, message: error?.message || "Página não encontrada." };
+  revalidatePath(`/app/projetos/${projectSlug}/documento`);
+  revalidatePath(`/app/projetos/${projectSlug}/documento/${pageId}`);
+  return { ok: true, message: "Página salva.", title: data.title, updatedAt: data.updated_at };
+}
+
+export async function archiveProjectPageAction(pageId, projectId, projectSlug) {
+  const { supabase, workspaceId } = await requireWorkspace();
+  const { error } = await supabase.from("project_pages").update({
+    archived_at: new Date().toISOString(),
+  })
+    .eq("id", pageId)
+    .eq("project_id", projectId)
+    .eq("workspace_id", workspaceId);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath(`/app/projetos/${projectSlug}/documento`);
+  return { ok: true, href: `/app/projetos/${projectSlug}/documento` };
+}
+
 export async function archiveProjectAction(id) {
   const { supabase, user, workspaceId } = await requireWorkspace();
   const { data: project, error: findError } = await supabase.from("projects").select("id,name,slug,client_id").eq("id", id).eq("workspace_id", workspaceId).is("archived_at", null).single();

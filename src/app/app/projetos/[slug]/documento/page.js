@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft, FileText, Pencil } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ProjectPageTree } from "@/components/project-page-tree";
 import { ProjectRichDocumentEditor } from "@/components/project-rich-document-editor";
 import { sanitizeRichDocument } from "@/lib/rich-document";
 import { getProjectDashboard } from "@/services/project-dashboard";
+import { getProjectPages } from "@/services/project-pages";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -15,6 +17,7 @@ export default async function ProjectDocumentPage({ params, searchParams }) {
   const query = await searchParams;
   const editing = query?.editar === "1";
   const { project, preview } = await getProjectDashboard(slug);
+  const pages = preview ? [] : await getProjectPages(project.id);
   const document = sanitizeRichDocument(project.documentation_content || "");
 
   return <AppShell preview={preview} context={{ type: "project", ...project }}>
@@ -24,24 +27,31 @@ export default async function ProjectDocumentPage({ params, searchParams }) {
           <Link className="back-link" href={`/app/projetos/${project.slug}`}><ArrowLeft size={15}/> Página do projeto</Link>
           <div className="eyebrow"><FileText size={14}/> Documento do projeto</div>
           <h1 className="page-title">{project.name}</h1>
-          <p className="subtitle">{editing ? "Edite, formate e aprimore a documentação deste projeto." : "Documentação completa e preservada deste projeto."}</p>
+          <p className="subtitle">{editing ? "Edite, formate e digite / para inserir blocos ou páginas." : "Documentação completa e preservada deste projeto."}</p>
         </div>
-        <div className="project-document-page-actions">
+        <div className="project-document-header-actions">
+          <ProjectPageTree project={project} pages={pages} activeId="root"/>
+          <div className="project-document-page-actions">
           {editing
             ? <Link className="btn" href={`/app/projetos/${project.slug}/documento`}>Concluir edição</Link>
             : <Link className="btn primary" href={`/app/projetos/${project.slug}/documento?editar=1`}><Pencil size={15}/> Editar documento</Link>}
+          </div>
         </div>
       </header>
-      {editing
-        ? <ProjectRichDocumentEditor project={project}/>
-        : document
-          ? <article className="rich-document-viewer" dangerouslySetInnerHTML={{ __html: document }}/>
-          : <section className="rich-document-empty">
-              <FileText size={28}/>
-              <h2>Documento ainda vazio</h2>
-              <p>Use o editor para criar a documentação completa deste projeto.</p>
-              <Link className="btn primary" href={`/app/projetos/${project.slug}/documento?editar=1`}><Pencil size={15}/> Começar a escrever</Link>
-            </section>}
+      <div className="project-document-workspace">
+        <div className="project-document-stage">
+          {editing
+            ? <ProjectRichDocumentEditor project={project}/>
+            : document
+              ? <article className="rich-document-viewer" dangerouslySetInnerHTML={{ __html: document }}/>
+              : <section className="rich-document-empty">
+                  <FileText size={28}/>
+                  <h2>Documento ainda vazio</h2>
+                  <p>Use o editor para criar a documentação completa deste projeto.</p>
+                  <Link className="btn primary" href={`/app/projetos/${project.slug}/documento?editar=1`}><Pencil size={15}/> Começar a escrever</Link>
+                </section>}
+        </div>
+      </div>
     </div>
   </AppShell>;
 }
