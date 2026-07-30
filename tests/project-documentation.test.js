@@ -52,3 +52,14 @@ test("project document has a dedicated route, rich editor and contextual AI", ()
   assert.match(aiRoute, /\.eq\("project_id", project\.id\)/);
   assert.match(sanitizer, /script\|style\|iframe/);
 });
+
+test("document formatting toolbar stays visible and exposes every control on mobile", () => {
+  const css = read("src/app/workspace-redesign.css");
+
+  assert.match(css, /\.rich-document-shell\{overflow:visible\}/);
+  assert.match(css, /\.rich-document-toolbar\{position:sticky;top:68px/);
+  assert.match(css, /\.content\.project-document-page\{overflow:visible\}/);
+  assert.match(css, /\.rich-document-toolbar\{top:60px;flex-wrap:wrap/);
+  assert.match(css, /\.rich-document-toolbar \.toolbar-divider\{display:none\}/);
+  assert.doesNotMatch(css, /\.rich-document-toolbar\{overflow-x:auto/);
+});
